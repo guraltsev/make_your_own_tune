@@ -6,10 +6,9 @@ An interactive React + TypeScript web app for exploring the **math and sound of 
 
 ## Webpage Link
 
-- **Local development URL:** http://localhost:5173
-- **Preview URL (after running preview):** http://localhost:4173
+- **Github Pages URL:** https://guraltsev.github.io/make_your_own_tune/
 
-> Note: This repository currently does not include a production deployment configuration. If you deploy it (for example via Vercel, Netlify, or GitHub Pages), replace this section with your public URL.
+
 
 ---
 
