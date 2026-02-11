@@ -4,6 +4,35 @@ An interactive web app for exploring the **math and sound of waveforms** in a pr
 
 ---
 
+## Table of Contents
+
+- [Webpage Link](#webpage-link)
+- [Summary of What the Webpage Does](#summary-of-what-the-webpage-does)
+- [Detailed Description of What the Webpage Does](#detailed-description-of-what-the-webpage-does)
+  - [1) Presentation-style top-level layout](#1-presentation-style-top-level-layout)
+  - [2) Wave library (selection stage)](#2-wave-library-selection-stage)
+  - [3) Wave inspector (modification stage)](#3-wave-inspector-modification-stage)
+  - [4) Timeline producer (composition stage)](#4-timeline-producer-composition-stage)
+  - [5) Signal generation and visualization model](#5-signal-generation-and-visualization-model)
+  - [6) Audio synthesis model](#6-audio-synthesis-model)
+- [Architecture / Design / Developer Guide](#architecture--design--developer-guide)
+- [Where the main code lives (and how to edit it)](#where-the-main-code-lives-and-how-to-edit-it)
+- [Tech stack](#tech-stack)
+- [High-level architecture](#high-level-architecture)
+- [Repository structure](#repository-structure)
+- [Core concepts for developers](#core-concepts-for-developers)
+  - [1) Wave math helpers](#1-wave-math-helpers)
+  - [2) State model](#2-state-model)
+  - [3) Audio lifecycle](#3-audio-lifecycle)
+  - [4) Parameter update strategy](#4-parameter-update-strategy)
+  - [5) Timeline data strategy](#5-timeline-data-strategy)
+- [Local development](#local-development)
+- [Developer workflow recommendations](#developer-workflow-recommendations)
+- [Suggested next improvements](#suggested-next-improvements)
+- [License](#license)
+
+---
+
 ## Webpage Link
 
 - **Github Pages URL:** https://guraltsev.github.io/make_your_own_tune/
