@@ -128,6 +128,30 @@ This design gives responsive interactivity while maintaining presentation-friend
 
 ## Architecture / Design / Developer Guide
 
+## Where the main code lives (and how to edit it)
+
+If you want to make quick changes, most of the app behavior is in:
+
+- `src/App.tsx` — main UI layout, waveform logic, and audio interactions.
+- `src/main.tsx` — app entry point.
+- `src/index.css` — global styles.
+
+### Easiest edit workflow: GitHub Codespaces
+
+1. Open this repository on GitHub.
+2. Click **Code** → **Codespaces** → **Create codespace on main** (or your working branch).
+3. In the Codespaces terminal, install dependencies and run the dev server:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+4. Edit files (usually `src/App.tsx`) and use the preview/browser to verify changes.
+5. Commit and push from Codespaces, then open a pull request.
+
+If you prefer local development, the same commands (`npm install`, `npm run dev`) work in any Node.js environment.
+
 ## Tech stack
 
 - **UI:** React 19 + TypeScript
