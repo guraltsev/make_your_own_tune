@@ -12,6 +12,21 @@ An interactive React + TypeScript web app for exploring the **math and sound of 
 
 ---
 
+
+## GitHub Pages Deployment Notes
+
+If the page appears unstyled or broken on GitHub Pages, it usually means Pages is serving the repository source instead of the built `dist/` output.
+
+This repo now includes a GitHub Actions workflow at `.github/workflows/deploy-pages.yml` that:
+
+1. Installs dependencies
+2. Runs `npm run build`
+3. Deploys `dist/` to GitHub Pages
+
+In repository settings, ensure **Pages → Build and deployment → Source** is set to **GitHub Actions**.
+
+---
+
 ## Summary of What the Webpage Does
 
 This webpage lets users:
