@@ -198,7 +198,7 @@ export default function SoundWavesPresentationMockup() {
   const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
 
-  const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline" | "customDraft" | "tilePreview">(null);
+  const [playing, setPlaying] = useState<null | "base" | "modified" | "inspectorSample" | "timeline" | "customDraft" | "tilePreview">(null);
   const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
 
@@ -413,6 +413,12 @@ export default function SoundWavesPresentationMockup() {
   }, []);
 
   const stopPlayback = useCallback((immediate = false) => {
+    if (rafRef.current != null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    pendingParamsRef.current = null;
+
     if (stopTimerRef.current != null) {
       window.clearTimeout(stopTimerRef.current);
       stopTimerRef.current = null;
@@ -469,6 +475,11 @@ export default function SoundWavesPresentationMockup() {
 
   const playVariant = useCallback(
     async (variant: "base" | "modified") => {
+      if (playing === variant) {
+        stopPlayback(true);
+        return;
+      }
+
       stopPlayback(true);
 
       const ctx = await ensureSynthNode();
@@ -498,8 +509,33 @@ export default function SoundWavesPresentationMockup() {
         stopPlayback();
       }, 2000);
     },
-    [amp, customModes, ensureSynthNode, freqHz, postParamsNow, stopPlayback, waveType]
+    [amp, customModes, ensureSynthNode, freqHz, playing, postParamsNow, stopPlayback, waveType]
   );
+
+  const playInspectorSample = useCallback(async () => {
+    if (playing === "inspectorSample") {
+      stopPlayback(true);
+      return;
+    }
+
+    stopPlayback(true);
+
+    const ctx = await ensureSynthNode();
+    const g = masterGainRef.current;
+    const sampleParams = { freqHz, amp: 1.0, waveType, customModes };
+
+    if (g) {
+      const now = ctx.currentTime;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(0.0001, now);
+      postParamsNow(sampleParams);
+      g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+    } else {
+      postParamsNow(sampleParams);
+    }
+
+    setPlaying("inspectorSample");
+  }, [customModes, ensureSynthNode, freqHz, playing, postParamsNow, stopPlayback, waveType]);
 
   const playWaveTilePreview = useCallback(
     async (type: WaveType) => {
@@ -929,7 +965,8 @@ export default function SoundWavesPresentationMockup() {
                     </div>
 
                     <div className="mt-3 text-xs text-slate-500">
-                      This plot overlays a base wave (220 Hz, amp 1) with the modified wave (current sliders). Click either curve to play a 2-second tone; clicking the other curve stops the current sound and switches.
+                      This plot overlays a base wave (220 Hz, amp 1) with the modified wave (current sliders). Click either curve to
+                      preview for 2 seconds.
                     </div>
                   </div>
                 </div>
@@ -1002,6 +1039,16 @@ export default function SoundWavesPresentationMockup() {
                         {WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType}
                       </div>
                       <div className="mt-1 text-sm text-slate-600">{formatHz(freqHz)} · amp {amp.toFixed(2)}</div>
+                      <button
+                        type="button"
+                        onClick={playInspectorSample}
+                        className="mt-3 w-full rounded-xl border bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                      >
+                        {playing === "inspectorSample" ? "Stop sample" : "Play sample"}
+                      </button>
+                      <div className="mt-2 text-[11px] text-slate-500">
+                        Plays the selected waveform sample at the current frequency from Part 2.
+                      </div>
                     </div>
                   </div>
                 </div>
