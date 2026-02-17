@@ -198,7 +198,7 @@ export default function SoundWavesPresentationMockup() {
   const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
 
-  const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline">(null);
+  const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline" | "customDraft">(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
 
   const ensureAudioContext = useCallback(async () => {
@@ -559,7 +559,7 @@ export default function SoundWavesPresentationMockup() {
 
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
-    if (!playing || playing === "timeline") return;
+    if (!playing || playing === "timeline" || playing === "customDraft") return;
     const p = playing === "base" ? { freqHz: 220, amp: 1.0, waveType, customModes } : { freqHz, amp, waveType, customModes };
     scheduleParams(p);
   }, [playing, waveType, amp, freqHz, customModes, scheduleParams]);
@@ -670,7 +670,6 @@ export default function SoundWavesPresentationMockup() {
 
   async function playCustomDraft() {
     const draft = normalizeModes(customDraftModes);
-    setCustomDraftModes(draft);
     stopPlayback(true);
     const ctx = await ensureSynthNode();
     const g = masterGainRef.current;
@@ -681,7 +680,7 @@ export default function SoundWavesPresentationMockup() {
       postParamsNow({ freqHz, amp, waveType: "custom", customModes: draft });
       g.gain.linearRampToValueAtTime(1.0, now + 0.03);
     }
-    setPlaying("modified");
+    setPlaying("customDraft");
     stopTimerRef.current = window.setTimeout(() => {
       stopPlayback();
     }, 2000);
