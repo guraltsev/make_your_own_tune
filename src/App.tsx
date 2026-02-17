@@ -499,6 +499,33 @@ export default function SoundWavesPresentationMockup() {
     [amp, customModes, ensureSynthNode, freqHz, postParamsNow, stopPlayback, waveType]
   );
 
+  const playWaveTilePreview = useCallback(
+    async (type: WaveType) => {
+      stopPlayback(true);
+
+      const ctx = await ensureSynthNode();
+      const g = masterGainRef.current;
+      const previewModes = type === "custom" ? customModes : [...DEFAULT_CUSTOM_MODES];
+
+      if (g) {
+        const now = ctx.currentTime;
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(0.0001, now);
+        postParamsNow({ freqHz, amp: 1.0, waveType: type, customModes: previewModes });
+        g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+      } else {
+        postParamsNow({ freqHz, amp: 1.0, waveType: type, customModes: previewModes });
+      }
+
+      setPlaying("modified");
+
+      stopTimerRef.current = window.setTimeout(() => {
+        stopPlayback();
+      }, 2000);
+    },
+    [customModes, ensureSynthNode, freqHz, postParamsNow, stopPlayback]
+  );
+
   const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
   const hasTimelineContent = useMemo(() => slots.some((slot) => slot.kind === "wave"), [slots]);
   const activeTimelineSlot =
@@ -738,9 +765,8 @@ export default function SoundWavesPresentationMockup() {
                 customModes,
               });
               return (
-                <button
+                <div
                   key={w.type}
-                  onClick={() => (w.type === "custom" ? openCustomEditor() : setWaveType(w.type))}
                   className={
                     "rounded-2xl border p-3 text-left shadow-sm transition " +
                     (selected
@@ -753,23 +779,45 @@ export default function SoundWavesPresentationMockup() {
                       <div className="font-semibold">{w.name}</div>
                       <div className="text-xs text-slate-500">{w.subtitle}</div>
                     </div>
-                    <div
-                      className={
-                        "text-[10px] px-2 py-1 rounded-full border " +
-                        (selected ? "border-slate-900 text-slate-900" : "border-slate-200 text-slate-500")
-                      }
-                    >
-                      {w.type === "custom" ? "Edit" : selected ? "Selected" : "Pick"}
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => playWaveTilePreview(w.type)}
+                        className="h-6 w-6 rounded-full border border-slate-200 text-slate-500 text-[10px] leading-none transition hover:bg-slate-100 hover:text-slate-700"
+                        aria-label={`Play ${w.name} waveform for 2 seconds at ${formatHz(freqHz)}`}
+                        title={`Play preview at ${formatHz(freqHz)}`}
+                      >
+                        ▶
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => (w.type === "custom" ? openCustomEditor() : setWaveType(w.type))}
+                        className={
+                          "text-[10px] px-2 py-1 rounded-full border transition " +
+                          (selected
+                            ? "border-slate-900 text-slate-900 bg-white"
+                            : "border-slate-200 text-slate-500 hover:bg-slate-100")
+                        }
+                      >
+                        {w.type === "custom" ? "Edit" : selected ? "Selected" : "Pick"}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-2 rounded-xl bg-white border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => (w.type === "custom" ? openCustomEditor() : setWaveType(w.type))}
+                    className="mt-2 w-full rounded-xl bg-white border overflow-hidden"
+                    aria-label={`Select ${w.name} waveform`}
+                  >
                     <svg width="100%" height="90" viewBox="0 0 160 90" className="block">
                       <path d={tilePath} fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-800" />
                       <line x1="0" y1="45" x2="160" y2="45" className="stroke-slate-200" strokeWidth="1" />
                     </svg>
-                  </div>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>
