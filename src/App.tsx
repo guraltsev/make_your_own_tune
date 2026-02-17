@@ -198,7 +198,8 @@ export default function SoundWavesPresentationMockup() {
   const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
 
-  const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline" | "customDraft">(null);
+  const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline" | "customDraft" | "tilePreview">(null);
+  const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
 
   const ensureAudioContext = useCallback(async () => {
@@ -454,6 +455,7 @@ export default function SoundWavesPresentationMockup() {
       workletNodeRef.current = null;
       masterGainRef.current = null;
       setPlaying(null);
+      setPlayingTileType(null);
     };
 
     if (immediate) {
@@ -501,6 +503,11 @@ export default function SoundWavesPresentationMockup() {
 
   const playWaveTilePreview = useCallback(
     async (type: WaveType) => {
+      if (playing === "tilePreview" && playingTileType === type) {
+        stopPlayback(true);
+        return;
+      }
+
       stopPlayback(true);
 
       const ctx = await ensureSynthNode();
@@ -517,13 +524,14 @@ export default function SoundWavesPresentationMockup() {
         postParamsNow({ freqHz, amp: 1.0, waveType: type, customModes: previewModes });
       }
 
-      setPlaying("modified");
+      setPlaying("tilePreview");
+      setPlayingTileType(type);
 
       stopTimerRef.current = window.setTimeout(() => {
         stopPlayback();
       }, 2000);
     },
-    [customModes, ensureSynthNode, freqHz, postParamsNow, stopPlayback]
+    [customModes, ensureSynthNode, freqHz, playing, playingTileType, postParamsNow, stopPlayback]
   );
 
   const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
@@ -586,7 +594,7 @@ export default function SoundWavesPresentationMockup() {
 
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
-    if (!playing || playing === "timeline" || playing === "customDraft") return;
+    if (!playing || playing === "timeline" || playing === "customDraft" || playing === "tilePreview") return;
     const p = playing === "base" ? { freqHz: 220, amp: 1.0, waveType, customModes } : { freqHz, amp, waveType, customModes };
     scheduleParams(p);
   }, [playing, waveType, amp, freqHz, customModes, scheduleParams]);
@@ -785,10 +793,18 @@ export default function SoundWavesPresentationMockup() {
                         type="button"
                         onClick={() => playWaveTilePreview(w.type)}
                         className="h-6 w-6 rounded-full border border-slate-200 text-slate-500 text-[10px] leading-none transition hover:bg-slate-100 hover:text-slate-700"
-                        aria-label={`Play ${w.name} waveform for 2 seconds at ${formatHz(freqHz)}`}
-                        title={`Play preview at ${formatHz(freqHz)}`}
+                        aria-label={
+                          playing === "tilePreview" && playingTileType === w.type
+                            ? `Stop ${w.name} waveform preview`
+                            : `Play ${w.name} waveform for 2 seconds at ${formatHz(freqHz)}`
+                        }
+                        title={
+                          playing === "tilePreview" && playingTileType === w.type
+                            ? "Stop preview"
+                            : `Play preview at ${formatHz(freqHz)}`
+                        }
                       >
-                        ▶
+                        {playing === "tilePreview" && playingTileType === w.type ? "■" : "▶"}
                       </button>
 
                       <button
