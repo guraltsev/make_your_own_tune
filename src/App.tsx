@@ -20,7 +20,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const TAU = Math.PI * 2;
 
-type WaveType = "sine" | "triangle" | "square" | "saw" | "noise" | "humps";
+type WaveType = "sine" | "triangle" | "square" | "saw" | "custom" | "humps";
+const CUSTOM_MODE_COUNT = 10;
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));
@@ -30,13 +31,15 @@ function fract(x: number) {
   return x - Math.floor(x);
 }
 
-function pseudoNoise01(x: number) {
-  // Deterministic pseudo-noise in [0,1]
-  // (Stable across renders; not cryptographic.)
-  return fract(Math.sin(x * 127.1 + 311.7) * 43758.5453123);
+const DEFAULT_CUSTOM_MODES = [1, ...Array(CUSTOM_MODE_COUNT - 1).fill(0)] as number[];
+
+function normalizeModes(modes: number[]) {
+  const total = modes.reduce((acc, value) => acc + Math.abs(value), 0);
+  if (total === 0) return [...DEFAULT_CUSTOM_MODES];
+  return modes.map((value) => value / total);
 }
 
-function waveSample(type: WaveType, tSec: number, freqHz: number): number {
+function waveSample(type: WaveType, tSec: number, freqHz: number, customModes?: number[]): number {
   const phase = TAU * freqHz * tSec;
 
   switch (type) {
@@ -60,12 +63,15 @@ function waveSample(type: WaveType, tSec: number, freqHz: number): number {
       return 2 * x - 1;
     }
 
-    case "noise": {
-      // Noise-like: sample pseudo-random at a rate tied to frequency
-      // (Quantize time so it looks like a noisy signal rather than white noise.)
-      const q = Math.floor(tSec * Math.max(40, freqHz * 0.6));
-      const u = pseudoNoise01(q + 17.0);
-      return 2 * u - 1;
+    case "custom": {
+      const modes = customModes ?? [];
+      let sum = 0;
+      for (let i = 0; i < CUSTOM_MODE_COUNT; i++) {
+        const weight = modes[i] ?? 0;
+        if (weight === 0) continue;
+        sum += weight * Math.sin(phase * (i + 1));
+      }
+      return clamp(sum, -1, 1);
     }
 
     case "humps": {
@@ -84,6 +90,7 @@ function makeWavePath(opts: {
   type: WaveType;
   amp: number;
   freqHz: number;
+  customModes?: number[];
   width: number;
   height: number;
   seconds: number;
@@ -99,6 +106,7 @@ function makeWavePath(opts: {
     seconds,
     samples = 220,
     yPad = 10,
+    customModes,
   } = opts;
 
   const midY = height / 2;
@@ -113,7 +121,7 @@ function makeWavePath(opts: {
   for (let i = 0; i <= samples; i++) {
     const x = (i / samples) * width;
     const t = (i / samples) * seconds;
-    const yVal = waveSample(type, t, freqHz);
+    const yVal = waveSample(type, t, freqHz, customModes);
     const y = midY - yVal * scaleY;
     d += i === 0 ? `M ${x.toFixed(2)} ${y.toFixed(2)}` : ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
   }
@@ -133,6 +141,7 @@ type Slot =
       type: WaveType;
       amp: number;
       freqHz: number;
+      customModes?: number[];
       label: string;
     };
 
@@ -141,7 +150,7 @@ const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
   { type: "triangle", name: "Triangle", subtitle: "linear ramps" },
   { type: "square", name: "Square", subtitle: "rich harmonics" },
   { type: "saw", name: "Sawtooth", subtitle: "bright" },
-  { type: "noise", name: "Noise", subtitle: "random" },
+  { type: "custom", name: "Custom", subtitle: "10 modes" },
   { type: "humps", name: "Humps", subtitle: "envelope" },
 ];
 
@@ -170,6 +179,9 @@ export default function SoundWavesPresentationMockup() {
   const [waveType, setWaveType] = useState<WaveType>("sine");
   const [amp, setAmp] = useState(1.0);
   const [freqHz, setFreqHz] = useState(220);
+  const [customModes, setCustomModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
+  const [customDraftModes, setCustomDraftModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
+  const [customEditorOpen, setCustomEditorOpen] = useState(false);
 
   // ----------------------------
   // Audio (continuous synth with smooth parameter updates)
@@ -183,7 +195,7 @@ export default function SoundWavesPresentationMockup() {
   const timelineTimersRef = useRef<number[]>([]);
   const timelineRafRef = useRef<number | null>(null);
   const timelineStartRef = useRef<number | null>(null);
-  const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType } | null>(null);
+  const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
 
   const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline">(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
@@ -233,11 +245,10 @@ export default function SoundWavesPresentationMockup() {
             this.waveB = 'sine';
             this.mix = 1; // 1 -> fully waveB
 
-            // Noise state
-            this.rng = 1 >>> 0;
-            this.noiseHold = 0;
-            this.noiseCounter = 0;
-            this.noiseHoldN = Math.max(1, Math.floor(sampleRate / 3500));
+            this.currentModes = Array(10).fill(0);
+            this.currentModes[0] = 1;
+            this.targetModes = Array(10).fill(0);
+            this.targetModes[0] = 1;
 
             this.port.onmessage = (e) => {
               const m = (e && e.data) ? e.data : {};
@@ -261,18 +272,14 @@ export default function SoundWavesPresentationMockup() {
                   this.mix = 0;
                 }
               }
-            };
-          }
 
-          _nextNoise() {
-            // LCG pseudo-random; sample-and-hold to avoid excessive harshness.
-            if (this.noiseCounter++ >= this.noiseHoldN) {
-              this.noiseCounter = 0;
-              this.rng = (1664525 * this.rng + 1013904223) >>> 0;
-              const u = this.rng / 4294967296;
-              this.noiseHold = 2 * u - 1;
-            }
-            return this.noiseHold;
+              if (Array.isArray(m.customModes)) {
+                for (let i = 0; i < 10; i++) {
+                  const v = Number(m.customModes[i] ?? 0);
+                  this.targetModes[i] = isFinite(v) ? v : 0;
+                }
+              }
+            };
           }
 
           _sampleWave(wave, phase) {
@@ -292,8 +299,13 @@ export default function SoundWavesPresentationMockup() {
                 const s = Math.abs(Math.sin(phase));
                 return 2 * Math.pow(s, 0.8) - 1;
               }
-              case 'noise':
-                return this._nextNoise();
+              case 'custom': {
+                let sum = 0;
+                for (let i = 0; i < 10; i++) {
+                  sum += this.currentModes[i] * Math.sin(phase * (i + 1));
+                }
+                return Math.max(-1, Math.min(1, sum));
+              }
               default:
                 return Math.sin(phase);
             }
@@ -317,6 +329,9 @@ export default function SoundWavesPresentationMockup() {
               this.currentFreq += (this.targetFreq - this.currentFreq) * kFreq;
               this.currentAmp += (this.targetAmp - this.currentAmp) * kAmp;
               this.mix += (1 - this.mix) * kWave;
+              for (let j = 0; j < 10; j++) {
+                this.currentModes[j] += (this.targetModes[j] - this.currentModes[j]) * kWave;
+              }
 
               // Continuous phase advance
               const dphi = TAU * (this.currentFreq / sr);
@@ -379,11 +394,11 @@ export default function SoundWavesPresentationMockup() {
     return ctx;
   }, [ensureAudioContext, ensureWorklet]);
 
-  const postParamsNow = useCallback((p: { freqHz: number; amp: number; waveType: WaveType }) => {
+  const postParamsNow = useCallback((p: { freqHz: number; amp: number; waveType: WaveType; customModes: number[] }) => {
     workletNodeRef.current?.port.postMessage({ type: "params", ...p });
   }, []);
 
-  const scheduleParams = useCallback((p: { freqHz: number; amp: number; waveType: WaveType }) => {
+  const scheduleParams = useCallback((p: { freqHz: number; amp: number; waveType: WaveType; customModes: number[] }) => {
     pendingParamsRef.current = p;
     if (rafRef.current != null) return;
 
@@ -459,8 +474,8 @@ export default function SoundWavesPresentationMockup() {
       // Prepare params for the chosen variant.
       const params =
         variant === "base"
-          ? { freqHz: 220, amp: 1.0, waveType }
-          : { freqHz, amp, waveType };
+          ? { freqHz: 220, amp: 1.0, waveType, customModes }
+          : { freqHz, amp, waveType, customModes };
 
       // Switching between base/modified: quick gain dip to mask abrupt change.
       if (g) {
@@ -480,7 +495,7 @@ export default function SoundWavesPresentationMockup() {
         stopPlayback();
       }, 2000);
     },
-    [amp, ensureSynthNode, freqHz, postParamsNow, stopPlayback, waveType]
+    [amp, customModes, ensureSynthNode, freqHz, postParamsNow, stopPlayback, waveType]
   );
 
   const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
@@ -501,8 +516,8 @@ export default function SoundWavesPresentationMockup() {
 
     const slotParams = slots.map((slot) =>
       slot.kind === "wave"
-        ? { freqHz: slot.freqHz, amp: slot.amp, waveType: slot.type }
-        : { freqHz: 220, amp: 0, waveType: "sine" as WaveType }
+        ? { freqHz: slot.freqHz, amp: slot.amp, waveType: slot.type, customModes: slot.customModes ?? customModes }
+        : { freqHz: 220, amp: 0, waveType: "sine" as WaveType, customModes }
     );
 
     postParamsNow(slotParams[0]);
@@ -539,14 +554,14 @@ export default function SoundWavesPresentationMockup() {
     stopTimerRef.current = window.setTimeout(() => {
       stopPlayback();
     }, timelineLengthMs);
-  }, [ensureSynthNode, postParamsNow, slots, stopPlayback]);
+  }, [customModes, ensureSynthNode, postParamsNow, slots, stopPlayback]);
 
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
     if (!playing || playing === "timeline") return;
-    const p = playing === "base" ? { freqHz: 220, amp: 1.0, waveType } : { freqHz, amp, waveType };
+    const p = playing === "base" ? { freqHz: 220, amp: 1.0, waveType, customModes } : { freqHz, amp, waveType, customModes };
     scheduleParams(p);
-  }, [playing, waveType, amp, freqHz, scheduleParams]);
+  }, [playing, waveType, amp, freqHz, customModes, scheduleParams]);
 
   // Cleanup on unmount.
   useEffect(() => {
@@ -574,8 +589,9 @@ export default function SoundWavesPresentationMockup() {
       seconds: 0.02,
       samples: 320,
       yPad: 14,
+      customModes,
     });
-  }, [waveType]);
+  }, [waveType, customModes]);
 
   const modifiedPath = useMemo(() => {
     return makeWavePath({
@@ -587,8 +603,23 @@ export default function SoundWavesPresentationMockup() {
       seconds: 0.02,
       samples: 320,
       yPad: 14,
+      customModes,
     });
-  }, [waveType, amp, freqHz]);
+  }, [waveType, amp, freqHz, customModes]);
+
+  const customDraftPath = useMemo(() => {
+    return makeWavePath({
+      type: "custom",
+      amp,
+      freqHz,
+      width: 760,
+      height: 220,
+      seconds: 0.02,
+      samples: 320,
+      yPad: 14,
+      customModes: normalizeModes(customDraftModes),
+    });
+  }, [amp, freqHz, customDraftModes]);
 
   function placeInSlot(i: number) {
     setSlots((prev) => {
@@ -598,7 +629,11 @@ export default function SoundWavesPresentationMockup() {
         type: waveType,
         amp,
         freqHz,
-        label: `${WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · ${formatHz(freqHz)}`,
+        customModes: waveType === "custom" ? [...customModes] : undefined,
+        label:
+          waveType === "custom"
+            ? `Custom mix · ${formatHz(freqHz)}`
+            : `${WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · ${formatHz(freqHz)}`,
       };
       return next;
     });
@@ -606,6 +641,49 @@ export default function SoundWavesPresentationMockup() {
 
   function clearTimeline() {
     setSlots([...Array(5)].map(() => ({ kind: "empty" })));
+  }
+
+  function openCustomEditor() {
+    setCustomDraftModes([...customModes]);
+    setCustomEditorOpen(true);
+  }
+
+  function closeCustomEditor() {
+    setCustomEditorOpen(false);
+  }
+
+  function saveCustomEditor() {
+    const normalized = normalizeModes(customDraftModes);
+    setCustomModes(normalized);
+    setWaveType("custom");
+    setCustomEditorOpen(false);
+  }
+
+  function updateCustomMode(index: number, value: number) {
+    setCustomDraftModes((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }
+
+  async function playCustomDraft() {
+    const draft = normalizeModes(customDraftModes);
+    setCustomDraftModes(draft);
+    stopPlayback(true);
+    const ctx = await ensureSynthNode();
+    const g = masterGainRef.current;
+    if (g) {
+      const now = ctx.currentTime;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(0.0001, now);
+      postParamsNow({ freqHz, amp, waveType: "custom", customModes: draft });
+      g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+    }
+    setPlaying("modified");
+    stopTimerRef.current = window.setTimeout(() => {
+      stopPlayback();
+    }, 2000);
   }
 
   return (
@@ -657,11 +735,12 @@ export default function SoundWavesPresentationMockup() {
                 seconds: 1,
                 samples: 120,
                 yPad: 10,
+                customModes,
               });
               return (
                 <button
                   key={w.type}
-                  onClick={() => setWaveType(w.type)}
+                  onClick={() => (w.type === "custom" ? openCustomEditor() : setWaveType(w.type))}
                   className={
                     "rounded-2xl border p-3 text-left shadow-sm transition " +
                     (selected
@@ -680,7 +759,7 @@ export default function SoundWavesPresentationMockup() {
                         (selected ? "border-slate-900 text-slate-900" : "border-slate-200 text-slate-500")
                       }
                     >
-                      {selected ? "Selected" : "Pick"}
+                      {w.type === "custom" ? "Edit" : selected ? "Selected" : "Pick"}
                     </div>
                   </div>
 
@@ -923,6 +1002,7 @@ export default function SoundWavesPresentationMockup() {
                             seconds: 0.02,
                             samples: 120,
                             yPad: 10,
+                            customModes: slot.customModes ?? customModes,
                           })
                         : null;
 
@@ -1004,6 +1084,68 @@ export default function SoundWavesPresentationMockup() {
           </div>
         </div>
       </div>
+
+      {customEditorOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="w-full max-w-5xl max-h-[90vh] overflow-auto rounded-3xl border bg-white shadow-2xl">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-slate-500">Custom waveform applet</div>
+                <div className="text-lg font-semibold">Mix 10 sine modes</div>
+              </div>
+              <button onClick={closeCustomEditor} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Close</button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <button onClick={playCustomDraft} className="rounded-2xl border bg-slate-50 p-4 text-left hover:border-slate-400">
+                <div className="text-sm font-medium flex items-center justify-between">
+                  <span>Click waveform to play preview</span>
+                  <span className="text-xs text-slate-500">2 seconds</span>
+                </div>
+                <svg viewBox="0 0 760 220" className="mt-3 h-56 w-full rounded-xl border bg-white">
+                  <line x1="0" y1="110" x2="760" y2="110" stroke="rgb(226,232,240)" strokeWidth="2" />
+                  <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
+                </svg>
+              </button>
+
+              <div className="rounded-2xl border bg-slate-50 p-4">
+                <div className="text-sm font-medium">Harmonic sliders</div>
+                <div className="mt-3 space-y-3">
+                  {customDraftModes.map((mode, i) => (
+                    <div key={i}>
+                      <div className="flex items-center justify-between text-xs text-slate-600">
+                        <span>sin(2π·{i + 1}x)</span>
+                        <span className="tabular-nums">{mode.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-1}
+                        max={1}
+                        step={0.01}
+                        value={mode}
+                        onChange={(e) => updateCustomMode(i, parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => setCustomDraftModes([...DEFAULT_CUSTOM_MODES])}
+                    className="rounded-xl border bg-white px-3 py-2 text-sm hover:bg-slate-50"
+                  >
+                    Reset modes
+                  </button>
+                  <button onClick={saveCustomEditor} className="rounded-xl bg-slate-900 text-white px-3 py-2 text-sm hover:bg-slate-800">
+                    Save to library slot
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
