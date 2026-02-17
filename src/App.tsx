@@ -34,7 +34,7 @@ function fract(x: number) {
 const DEFAULT_CUSTOM_MODES = [1, ...Array(CUSTOM_MODE_COUNT - 1).fill(0)] as number[];
 
 function normalizeModes(modes: number[]) {
-  const total = modes.reduce((acc, value) => acc + Math.abs(value), 0);
+  const total = modes.reduce((acc, value) => acc + value, 0);
   if (total === 0) return [...DEFAULT_CUSTOM_MODES];
   return modes.map((value) => value / total);
 }
@@ -658,7 +658,7 @@ export default function SoundWavesPresentationMockup() {
       freqHz: 220,
       width: 760,
       height: 280,
-      seconds: 0.02,
+      seconds: 3 / 220,
       samples: 320,
       yPad: 14,
       customModes,
@@ -672,7 +672,7 @@ export default function SoundWavesPresentationMockup() {
       freqHz,
       width: 760,
       height: 280,
-      seconds: 0.02,
+      seconds: 3 / freqHz,
       samples: 320,
       yPad: 14,
       customModes,
@@ -685,10 +685,10 @@ export default function SoundWavesPresentationMockup() {
       amp,
       freqHz,
       width: 760,
-      height: 220,
-      seconds: 0.02,
+      height: 260,
+      seconds: 3 / freqHz,
       samples: 320,
-      yPad: 14,
+      yPad: 8,
       customModes: normalizeModes(customDraftModes),
     });
   }, [amp, freqHz, customDraftModes]);
@@ -910,7 +910,7 @@ export default function SoundWavesPresentationMockup() {
                       <span>
                         {WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · {formatHz(freqHz)} · amp {amp.toFixed(2)}
                       </span>
-                      <span className="text-xs text-slate-500">window: 20 ms</span>
+                      <span className="text-xs text-slate-500">window: 3 periods</span>
                     </div>
 
                     <div className="mt-3 flex-1 min-h-0 rounded-xl bg-white border overflow-hidden">
@@ -1213,8 +1213,9 @@ export default function SoundWavesPresentationMockup() {
                   <span>Click waveform to play preview</span>
                   <span className="text-xs text-slate-500">2 seconds</span>
                 </div>
-                <svg viewBox="0 0 760 220" className="mt-3 h-56 w-full rounded-xl border bg-white">
-                  <line x1="0" y1="110" x2="760" y2="110" stroke="rgb(226,232,240)" strokeWidth="2" />
+                <div className="mt-2 text-center text-sm font-medium text-slate-700">Playing at {formatHz(freqHz)}</div>
+                <svg viewBox="0 0 760 260" className="mt-3 h-64 w-full rounded-xl border bg-white">
+                  <line x1="0" y1="130" x2="760" y2="130" stroke="rgb(226,232,240)" strokeWidth="2" />
                   <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
                 </svg>
               </button>
@@ -1225,12 +1226,14 @@ export default function SoundWavesPresentationMockup() {
                   {customDraftModes.map((mode, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between text-xs text-slate-600">
-                        <span>sin(2π·{i + 1}x)</span>
+                        <span>
+                          sin(2π f <span className="text-blue-600">{i + 1}</span> x)
+                        </span>
                         <span className="tabular-nums">{mode.toFixed(2)}</span>
                       </div>
                       <input
                         type="range"
-                        min={-1}
+                        min={0}
                         max={1}
                         step={0.01}
                         value={mode}
