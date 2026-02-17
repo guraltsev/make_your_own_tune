@@ -183,6 +183,7 @@ export default function SoundWavesPresentationMockup() {
   const [customDraftModes, setCustomDraftModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
   const [customEditorOpen, setCustomEditorOpen] = useState(false);
 
+  // Amani and Jacob are cool.
   // ----------------------------
   // Audio (continuous synth with smooth parameter updates)
   // ----------------------------
