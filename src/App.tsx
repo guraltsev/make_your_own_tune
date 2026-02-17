@@ -890,7 +890,7 @@ export default function SoundWavesPresentationMockup() {
                   )}
 
                   <div className="grid grid-cols-5 gap-3 min-h-0">
-                  {slots.map((slot, i) => {
+                    {slots.map((slot, i) => {
                     const label = timeLabelForSlot(i);
                     const filled = slot.kind === "wave";
                     const miniPath = filled
@@ -910,9 +910,11 @@ export default function SoundWavesPresentationMockup() {
                       <div key={i} className="flex flex-col min-h-0">
                         <div
                           className={
-                            "flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 " +
+                            "flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-all duration-200 origin-center " +
                             (filled ? "border-slate-300" : "border-dashed border-slate-300") +
-                            (activeTimelineSlot === i ? " ring-2 ring-slate-400/50" : "")
+                            (activeTimelineSlot === i
+                              ? " ring-2 ring-blue-400 border-blue-400 bg-blue-50 shadow-md scale-[1.03]"
+                              : "")
                           }
                         >
                           <div className="flex items-center justify-between">
@@ -948,6 +950,13 @@ export default function SoundWavesPresentationMockup() {
                     );
                   })}
                   </div>
+                </div>
+
+                <div className="mt-3 h-1 w-full rounded-full bg-slate-200 overflow-hidden" aria-hidden="true">
+                  <div
+                    className="h-full bg-blue-500 transition-[width] duration-100"
+                    style={{ width: `${(timelineProgress ?? 0) * 100}%` }}
+                  />
                 </div>
 
                 <div className="mt-4 text-xs text-slate-500">
