@@ -175,9 +175,13 @@ export default function SoundWavesPresentationMockup() {
   const masterGainRef = useRef<GainNode | null>(null);
   const stopTimerRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const timelineTimersRef = useRef<number[]>([]);
+  const timelineRafRef = useRef<number | null>(null);
+  const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType } | null>(null);
 
-  const [playing, setPlaying] = useState<null | "base" | "modified">(null);
+  const [playing, setPlaying] = useState<null | "base" | "modified" | "timeline">(null);
+  const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
 
   const ensureAudioContext = useCallback(async () => {
     if (!audioCtxRef.current) {
@@ -380,11 +384,21 @@ export default function SoundWavesPresentationMockup() {
     });
   }, []);
 
-  const stopPlayback = useCallback(() => {
+  const stopPlayback = useCallback((immediate = false) => {
     if (stopTimerRef.current != null) {
       window.clearTimeout(stopTimerRef.current);
       stopTimerRef.current = null;
     }
+
+    timelineTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    timelineTimersRef.current = [];
+
+    if (timelineRafRef.current != null) {
+      window.cancelAnimationFrame(timelineRafRef.current);
+      timelineRafRef.current = null;
+    }
+    timelineStartRef.current = null;
+    setTimelineProgress(null);
 
     const ctx = audioCtxRef.current;
     const g = masterGainRef.current;
@@ -392,11 +406,14 @@ export default function SoundWavesPresentationMockup() {
     if (ctx && g) {
       const now = ctx.currentTime;
       g.gain.cancelScheduledValues(now);
-      g.gain.setTargetAtTime(0.0001, now, 0.02);
+      if (immediate) {
+        g.gain.setValueAtTime(0.0001, now);
+      } else {
+        g.gain.setTargetAtTime(0.0001, now, 0.02);
+      }
     }
 
-    // Disconnect shortly after fade.
-    window.setTimeout(() => {
+    const finishStop = () => {
       try {
         workletNodeRef.current?.disconnect();
       } catch {
@@ -410,15 +427,20 @@ export default function SoundWavesPresentationMockup() {
       workletNodeRef.current = null;
       masterGainRef.current = null;
       setPlaying(null);
-    }, 80);
+    };
+
+    if (immediate) {
+      finishStop();
+      return;
+    }
+
+    // Disconnect shortly after fade.
+    window.setTimeout(finishStop, 80);
   }, []);
 
   const playVariant = useCallback(
     async (variant: "base" | "modified") => {
-      if (stopTimerRef.current != null) {
-        window.clearTimeout(stopTimerRef.current);
-        stopTimerRef.current = null;
-      }
+      stopPlayback(true);
 
       const ctx = await ensureSynthNode();
       const g = masterGainRef.current;
@@ -433,16 +455,9 @@ export default function SoundWavesPresentationMockup() {
       if (g) {
         const now = ctx.currentTime;
         g.gain.cancelScheduledValues(now);
-        if (playing && playing !== variant) {
-          g.gain.setValueAtTime(1.0, now);
-          g.gain.linearRampToValueAtTime(0.0001, now + 0.01);
-          window.setTimeout(() => postParamsNow(params), 10);
-          g.gain.linearRampToValueAtTime(1.0, now + 0.03);
-        } else {
-          g.gain.setValueAtTime(0.0001, now);
-          postParamsNow(params);
-          g.gain.linearRampToValueAtTime(1.0, now + 0.03);
-        }
+        g.gain.setValueAtTime(0.0001, now);
+        postParamsNow(params);
+        g.gain.linearRampToValueAtTime(1.0, now + 0.03);
       } else {
         postParamsNow(params);
       }
@@ -457,9 +472,64 @@ export default function SoundWavesPresentationMockup() {
     [amp, ensureSynthNode, freqHz, playing, postParamsNow, stopPlayback, waveType]
   );
 
+  const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
+  const hasTimelineContent = useMemo(() => slots.some((slot) => slot.kind === "wave"), [slots]);
+  const activeTimelineSlot =
+    playing === "timeline" && timelineProgress != null ? Math.min(4, Math.floor(timelineProgress * 5)) : null;
+
+  const playTimeline = useCallback(async () => {
+    stopPlayback(true);
+
+    const ctx = await ensureSynthNode();
+    const g = masterGainRef.current;
+    const timelineLengthMs = 10_000;
+    const slotLengthMs = 2_000;
+
+    const slotParams = slots.map((slot) =>
+      slot.kind === "wave"
+        ? { freqHz: slot.freqHz, amp: slot.amp, waveType: slot.type }
+        : { freqHz: 220, amp: 0, waveType: "sine" as WaveType }
+    );
+
+    postParamsNow(slotParams[0]);
+
+    if (g) {
+      const now = ctx.currentTime;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+    }
+
+    setPlaying("timeline");
+    timelineStartRef.current = performance.now();
+    setTimelineProgress(0);
+
+    const tick = () => {
+      if (timelineStartRef.current == null) return;
+      const elapsed = performance.now() - timelineStartRef.current;
+      const progress = clamp(elapsed / timelineLengthMs, 0, 1);
+      setTimelineProgress(progress);
+      if (progress < 1) {
+        timelineRafRef.current = window.requestAnimationFrame(tick);
+      }
+    };
+
+    timelineRafRef.current = window.requestAnimationFrame(tick);
+
+    timelineTimersRef.current = slotParams.slice(1).map((params, idx) =>
+      window.setTimeout(() => {
+        postParamsNow(params);
+      }, slotLengthMs * (idx + 1))
+    );
+
+    stopTimerRef.current = window.setTimeout(() => {
+      stopPlayback();
+    }, timelineLengthMs);
+  }, [ensureSynthNode, postParamsNow, slots, stopPlayback]);
+
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || playing === "timeline") return;
     const p = playing === "base" ? { freqHz: 220, amp: 1.0, waveType } : { freqHz, amp, waveType };
     scheduleParams(p);
   }, [playing, waveType, amp, freqHz, scheduleParams]);
@@ -478,8 +548,6 @@ export default function SoundWavesPresentationMockup() {
 
   const baseStrokeWidth = playing === "base" ? 6 : 4;
   const modifiedStrokeWidth = playing === "modified" ? 6 : 4;
-
-  const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
 
 
   const basePath = useMemo(() => {
@@ -793,17 +861,35 @@ export default function SoundWavesPresentationMockup() {
                   <div className="text-lg font-semibold">10-second Timeline</div>
                 </div>
 
-                <button
-                  onClick={clearTimeline}
-                  className="rounded-xl border bg-white px-3 py-2 text-sm hover:bg-slate-50"
-                >
-                  Clear
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={playTimeline}
+                    disabled={!hasTimelineContent}
+                    className="rounded-xl bg-slate-900 text-white px-3 py-2 text-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {playing === "timeline" ? "Playing…" : "Play all"}
+                  </button>
+                  <button
+                    onClick={clearTimeline}
+                    className="rounded-xl border bg-white px-3 py-2 text-sm hover:bg-slate-50"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 p-6 flex flex-col min-h-0">
                 {/* timeline bar */}
-                <div className="grid grid-cols-5 gap-3 min-h-0">
+                <div className="relative min-h-0">
+                  {timelineProgress != null && (
+                    <div
+                      className="absolute top-0 bottom-0 w-px bg-slate-400/60 pointer-events-none transition-all duration-75"
+                      style={{ left: `${timelineProgress * 100}%` }}
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  <div className="grid grid-cols-5 gap-3 min-h-0">
                   {slots.map((slot, i) => {
                     const label = timeLabelForSlot(i);
                     const filled = slot.kind === "wave";
@@ -825,7 +911,8 @@ export default function SoundWavesPresentationMockup() {
                         <div
                           className={
                             "flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 " +
-                            (filled ? "border-slate-300" : "border-dashed border-slate-300")
+                            (filled ? "border-slate-300" : "border-dashed border-slate-300") +
+                            (activeTimelineSlot === i ? " ring-2 ring-slate-400/50" : "")
                           }
                         >
                           <div className="flex items-center justify-between">
@@ -860,6 +947,7 @@ export default function SoundWavesPresentationMockup() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
 
                 <div className="mt-4 text-xs text-slate-500">
