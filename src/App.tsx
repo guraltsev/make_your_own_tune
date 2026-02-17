@@ -156,6 +156,11 @@ function timeLabelForSlot(i: number) {
   return `${start}–${end}s`;
 }
 
+type BrowserWindowWithWebkitAudio = Window & {
+  AudioContext?: typeof AudioContext;
+  webkitAudioContext?: typeof AudioContext;
+};
+
 // ----------------------------
 // Main component
 // ----------------------------
@@ -184,14 +189,20 @@ export default function SoundWavesPresentationMockup() {
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
 
   const ensureAudioContext = useCallback(async () => {
-    if (!audioCtxRef.current) {
-      const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
-      audioCtxRef.current = new Ctx();
+    let ctx = audioCtxRef.current;
+    if (!ctx) {
+      const browserWindow = window as BrowserWindowWithWebkitAudio;
+      const Ctx = browserWindow.AudioContext ?? browserWindow.webkitAudioContext;
+      if (!Ctx) {
+        throw new Error("Web Audio API is not available in this browser.");
+      }
+      ctx = new Ctx();
+      audioCtxRef.current = ctx;
     }
-    if (audioCtxRef.current.state === "suspended") {
-      await audioCtxRef.current.resume();
+    if (ctx.state === "suspended") {
+      await ctx.resume();
     }
-    return audioCtxRef.current;
+    return ctx;
   }, []);
 
   const ensureWorklet = useCallback(async (ctx: AudioContext) => {
@@ -469,7 +480,7 @@ export default function SoundWavesPresentationMockup() {
         stopPlayback();
       }, 2000);
     },
-    [amp, ensureSynthNode, freqHz, playing, postParamsNow, stopPlayback, waveType]
+    [amp, ensureSynthNode, freqHz, postParamsNow, stopPlayback, waveType]
   );
 
   const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
@@ -478,6 +489,7 @@ export default function SoundWavesPresentationMockup() {
     playing === "timeline" && timelineProgress != null ? Math.min(4, Math.floor(timelineProgress * 5)) : null;
   const slotProgressWithinActive =
     playing === "timeline" && timelineProgress != null ? (timelineProgress * 5) % 1 : 0;
+  const timelineProgressPct = (timelineProgress ?? 0) * 100;
 
   const playTimeline = useCallback(async () => {
     stopPlayback(true);
@@ -886,12 +898,12 @@ export default function SoundWavesPresentationMockup() {
                   <div className="mb-3 relative h-2 w-full rounded-full bg-slate-200" aria-hidden="true">
                     <div
                       className="h-full rounded-full bg-blue-500 transition-[width] duration-100"
-                      style={{ width: `${(timelineProgress ?? 0) * 100}%` }}
+                      style={{ width: `${timelineProgressPct}%` }}
                     />
                     {timelineProgress != null && (
                       <div
-                        className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 rounded-full border border-blue-600 bg-blue-500 shadow"
-                        style={{ left: `${timelineProgress * 100}%` }}
+                        className="absolute h-3 w-3 rounded-full border border-blue-600 bg-blue-500 shadow"
+                        style={{ left: `${timelineProgressPct}%`, top: "50%", transform: "translate(-50%, -50%)" }}
                       />
                     )}
                   </div>
@@ -918,12 +930,19 @@ export default function SoundWavesPresentationMockup() {
                         <div key={i} className="flex flex-col min-h-0">
                           <div
                             className={
-                              "relative flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-all duration-200 origin-center " +
+                              "relative flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-colors duration-200 " +
                               (filled ? "border-slate-300" : "border-dashed border-slate-300") +
                               (isActive
-                                ? " ring-4 ring-blue-400 border-blue-500 bg-blue-50 shadow-lg scale-[1.05]"
+                                ? " ring-2 ring-blue-200 border-blue-400 bg-blue-50 shadow-lg"
                                 : "")
                             }
+                            style={{
+                              transform: isActive ? "scale(1.15)" : "scale(1)",
+                              transformOrigin: "center",
+                              transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease",
+                              willChange: "transform",
+                              zIndex: isActive ? 2 : 1,
+                            }}
                           >
                             {isActive && (
                               <div className="absolute top-2 right-2 rounded-full bg-blue-600 text-white text-[10px] px-2 py-0.5 animate-pulse">
