@@ -476,6 +476,8 @@ export default function SoundWavesPresentationMockup() {
   const hasTimelineContent = useMemo(() => slots.some((slot) => slot.kind === "wave"), [slots]);
   const activeTimelineSlot =
     playing === "timeline" && timelineProgress != null ? Math.min(4, Math.floor(timelineProgress * 5)) : null;
+  const slotProgressWithinActive =
+    playing === "timeline" && timelineProgress != null ? (timelineProgress * 5) % 1 : 0;
 
   const playTimeline = useCallback(async () => {
     stopPlayback(true);
@@ -879,85 +881,100 @@ export default function SoundWavesPresentationMockup() {
               </div>
 
               <div className="flex-1 p-6 flex flex-col min-h-0">
-                {/* timeline bar */}
-                <div className="relative min-h-0">
-                  {timelineProgress != null && (
+                {/* timeline transport + slots */}
+                <div className="min-h-0">
+                  <div className="mb-3 relative h-2 w-full rounded-full bg-slate-200" aria-hidden="true">
                     <div
-                      className="absolute top-0 bottom-0 w-px bg-slate-400/60 pointer-events-none transition-all duration-75"
-                      style={{ left: `${timelineProgress * 100}%` }}
-                      aria-hidden="true"
+                      className="h-full rounded-full bg-blue-500 transition-[width] duration-100"
+                      style={{ width: `${(timelineProgress ?? 0) * 100}%` }}
                     />
-                  )}
+                    {timelineProgress != null && (
+                      <div
+                        className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 rounded-full border border-blue-600 bg-blue-500 shadow"
+                        style={{ left: `${timelineProgress * 100}%` }}
+                      />
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-5 gap-3 min-h-0">
                     {slots.map((slot, i) => {
-                    const label = timeLabelForSlot(i);
-                    const filled = slot.kind === "wave";
-                    const miniPath = filled
-                      ? makeWavePath({
-                          type: slot.type,
-                          amp: slot.amp,
-                          freqHz: slot.freqHz,
-                          width: 220,
-                          height: 80,
-                          seconds: 0.02,
-                          samples: 120,
-                          yPad: 10,
-                        })
-                      : null;
+                      const label = timeLabelForSlot(i);
+                      const filled = slot.kind === "wave";
+                      const isActive = activeTimelineSlot === i;
+                      const miniPath = filled
+                        ? makeWavePath({
+                            type: slot.type,
+                            amp: slot.amp,
+                            freqHz: slot.freqHz,
+                            width: 220,
+                            height: 80,
+                            seconds: 0.02,
+                            samples: 120,
+                            yPad: 10,
+                          })
+                        : null;
 
-                    return (
-                      <div key={i} className="flex flex-col min-h-0">
-                        <div
-                          className={
-                            "flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-all duration-200 origin-center " +
-                            (filled ? "border-slate-300" : "border-dashed border-slate-300") +
-                            (activeTimelineSlot === i
-                              ? " ring-2 ring-blue-400 border-blue-400 bg-blue-50 shadow-md scale-[1.03]"
-                              : "")
-                          }
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs uppercase tracking-wider text-slate-500">Slot {i + 1}</div>
-                            <div className="text-xs text-slate-500 tabular-nums">{label}</div>
-                          </div>
-
-                          <div className="mt-2 rounded-xl bg-white border flex-1 min-h-0 overflow-hidden">
-                            {filled ? (
-                              <svg viewBox="0 0 220 80" className="w-full h-full block" preserveAspectRatio="none">
-                                <line x1="0" y1="40" x2="220" y2="40" stroke="rgb(226,232,240)" strokeWidth="2" />
-                                <path d={miniPath!} fill="none" stroke="rgb(15,23,42)" strokeWidth="3" />
-                              </svg>
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-                                empty
+                      return (
+                        <div key={i} className="flex flex-col min-h-0">
+                          <div
+                            className={
+                              "relative flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-all duration-200 origin-center " +
+                              (filled ? "border-slate-300" : "border-dashed border-slate-300") +
+                              (isActive
+                                ? " ring-4 ring-blue-400 border-blue-500 bg-blue-50 shadow-lg scale-[1.05]"
+                                : "")
+                            }
+                          >
+                            {isActive && (
+                              <div className="absolute top-2 right-2 rounded-full bg-blue-600 text-white text-[10px] px-2 py-0.5 animate-pulse">
+                                Playing
                               </div>
                             )}
+
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs uppercase tracking-wider text-slate-500">Slot {i + 1}</div>
+                              <div className="text-xs text-slate-500 tabular-nums">{label}</div>
+                            </div>
+
+                            <div className="mt-2 rounded-xl bg-white border flex-1 min-h-0 overflow-hidden">
+                              {filled ? (
+                                <svg viewBox="0 0 220 80" className="w-full h-full block" preserveAspectRatio="none">
+                                  <line x1="0" y1="40" x2="220" y2="40" stroke="rgb(226,232,240)" strokeWidth="2" />
+                                  <path d={miniPath!} fill="none" stroke="rgb(15,23,42)" strokeWidth="3" />
+                                </svg>
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                                  empty
+                                </div>
+                              )}
+                            </div>
+
+                            {isActive && (
+                              <div className="mt-2 h-1 w-full rounded-full bg-blue-100 overflow-hidden" aria-hidden="true">
+                                <div
+                                  className="h-full bg-blue-500 transition-[width] duration-100"
+                                  style={{ width: `${slotProgressWithinActive * 100}%` }}
+                                />
+                              </div>
+                            )}
+
+                            <div className="mt-2 text-xs text-slate-600 truncate">
+                              {filled ? slot.label : "—"}
+                            </div>
                           </div>
 
-                          <div className="mt-2 text-xs text-slate-600 truncate">
-                            {filled ? slot.label : "—"}
-                          </div>
+                          <button
+                            onClick={() => placeInSlot(i)}
+                            className="mt-2 rounded-xl bg-slate-900 text-white px-3 py-2 text-sm hover:bg-slate-800"
+                          >
+                            Add here
+                          </button>
                         </div>
-
-                        <button
-                          onClick={() => placeInSlot(i)}
-                          className="mt-2 rounded-xl bg-slate-900 text-white px-3 py-2 text-sm hover:bg-slate-800"
-                        >
-                          Add here
-                        </button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="mt-3 h-1 w-full rounded-full bg-slate-200 overflow-hidden" aria-hidden="true">
-                  <div
-                    className="h-full bg-blue-500 transition-[width] duration-100"
-                    style={{ width: `${(timelineProgress ?? 0) * 100}%` }}
-                  />
-                </div>
 
                 <div className="mt-4 text-xs text-slate-500">
                   Each slot is a 2-second region (total 10 seconds). “Add here” copies the current modified wave (type, amplitude,
