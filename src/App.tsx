@@ -19,6 +19,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // ----------------------------
 
 const TAU = Math.PI * 2;
+const PREVIEW_PERIODS = 3;
+const BASE_FREQUENCY_HZ = 220;
 
 type WaveType = "sine" | "triangle" | "square" | "saw" | "custom" | "humps";
 const CUSTOM_MODE_COUNT = 10;
@@ -84,6 +86,11 @@ function waveSample(type: WaveType, tSec: number, freqHz: number, customModes?: 
     default:
       return 0;
   }
+}
+
+function secondsForPeriods(freqHz: number, periods = PREVIEW_PERIODS) {
+  const safeFreq = Math.max(freqHz, 1e-6);
+  return periods / safeFreq;
 }
 
 function makeWavePath(opts: {
@@ -488,7 +495,7 @@ export default function SoundWavesPresentationMockup() {
       // Prepare params for the chosen variant.
       const params =
         variant === "base"
-          ? { freqHz: 220, amp: 1.0, waveType, customModes }
+          ? { freqHz: BASE_FREQUENCY_HZ, amp: 1.0, waveType, customModes }
           : { freqHz, amp, waveType, customModes };
 
       // Switching between base/modified: quick gain dip to mask abrupt change.
@@ -655,10 +662,10 @@ export default function SoundWavesPresentationMockup() {
     return makeWavePath({
       type: waveType,
       amp: 1,
-      freqHz: 220,
+      freqHz: BASE_FREQUENCY_HZ,
       width: 760,
       height: 280,
-      seconds: 3 / 220,
+      seconds: secondsForPeriods(BASE_FREQUENCY_HZ),
       samples: 320,
       yPad: 14,
       customModes,
@@ -672,7 +679,7 @@ export default function SoundWavesPresentationMockup() {
       freqHz,
       width: 760,
       height: 280,
-      seconds: 3 / freqHz,
+      seconds: secondsForPeriods(BASE_FREQUENCY_HZ),
       samples: 320,
       yPad: 14,
       customModes,
@@ -686,7 +693,7 @@ export default function SoundWavesPresentationMockup() {
       freqHz,
       width: 760,
       height: 260,
-      seconds: 3 / freqHz,
+      seconds: secondsForPeriods(freqHz),
       samples: 320,
       yPad: 8,
       customModes: normalizeModes(customDraftModes),
@@ -803,7 +810,7 @@ export default function SoundWavesPresentationMockup() {
                 freqHz: 4,
                 width: 160,
                 height: 90,
-                seconds: 1,
+                seconds: secondsForPeriods(4),
                 samples: 120,
                 yPad: 10,
                 customModes,
@@ -910,7 +917,7 @@ export default function SoundWavesPresentationMockup() {
                       <span>
                         {WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · {formatHz(freqHz)} · amp {amp.toFixed(2)}
                       </span>
-                      <span className="text-xs text-slate-500">window: 3 periods</span>
+                      <span className="text-xs text-slate-500">window: 3 periods at 220 Hz</span>
                     </div>
 
                     <div className="mt-3 flex-1 min-h-0 rounded-xl bg-white border overflow-hidden">
