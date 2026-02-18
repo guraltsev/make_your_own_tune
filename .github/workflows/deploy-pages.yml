@@ -2,13 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [main]
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -56,21 +52,33 @@ jobs:
       - name: Build
         run: npm run build -- --base "${{ steps.vars.outputs.base_path }}"
 
-      - name: Deploy main site
-        if: github.event_name == 'push' && github.ref_name == 'main'
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: false
           keep_files: true
 
-      - name: Deploy preview site
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name != 'main')
-        uses: peaceiris/actions-gh-pages@v4
+  deploy:
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-pr-preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy PR preview
+        id: deployment
+        uses: actions/deploy-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          destination_dir: ${{ steps.vars.outputs.deploy_dir }}
-          force_orphan: false
-          keep_files: true
+          preview: true
