@@ -36,9 +36,22 @@ function fract(x: number) {
 const DEFAULT_CUSTOM_MODES = [1, ...Array(CUSTOM_MODE_COUNT - 1).fill(0)] as number[];
 
 function normalizeModes(modes: number[]) {
-  const total = modes.reduce((acc, value) => acc + value, 0);
-  if (total === 0) return [...DEFAULT_CUSTOM_MODES];
-  return modes.map((value) => value / total);
+  const totalMagnitude = modes.reduce((acc, value) => acc + Math.abs(value), 0);
+  if (totalMagnitude === 0) return [...DEFAULT_CUSTOM_MODES];
+  return modes.map((value) => value / totalMagnitude);
+}
+
+function getBipolarSliderBackground(value: number) {
+  const trackColor = "rgb(226,232,240)";
+  const fillColor = "rgb(37,99,235)";
+  const clamped = clamp(value, -1, 1);
+  const pointPercent = ((clamped + 1) / 2) * 100;
+
+  if (pointPercent >= 50) {
+    return `linear-gradient(to right, ${trackColor} 0%, ${trackColor} 50%, ${fillColor} 50%, ${fillColor} ${pointPercent}%, ${trackColor} ${pointPercent}%, ${trackColor} 100%)`;
+  }
+
+  return `linear-gradient(to right, ${trackColor} 0%, ${trackColor} ${pointPercent}%, ${fillColor} ${pointPercent}%, ${fillColor} 50%, ${trackColor} 50%, ${trackColor} 100%)`;
 }
 
 function waveSample(type: WaveType, tSec: number, freqHz: number, customModes?: number[]): number {
@@ -1240,12 +1253,13 @@ export default function SoundWavesPresentationMockup() {
                       </div>
                       <input
                         type="range"
-                        min={0}
+                        min={-1}
                         max={1}
                         step={0.01}
                         value={mode}
                         onChange={(e) => updateCustomMode(i, parseFloat(e.target.value))}
-                        className="w-full"
+                        className="w-full bipolar-slider"
+                        style={{ background: getBipolarSliderBackground(mode) }}
                       />
                     </div>
                   ))}
