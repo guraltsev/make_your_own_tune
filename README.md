@@ -35,7 +35,9 @@ An interactive web app for exploring the **math and sound of waveforms** in a pr
 
 ## Webpage Link
 
-- **Github Pages URL:** https://guraltsev.github.io/make_your_own_tune/
+- **Github Pages URL (main):** https://guraltsev.github.io/make_your_own_tune/
+- **Pull request previews:** `https://guraltsev.github.io/make_your_own_tune/pr/NUMBER/`
+- **Branch previews:** `https://guraltsev.github.io/make_your_own_tune/branch/BRANCH_NAME/` where non URL-safe characters (including `/`) are converted to `_`.
 
 ---
 
