@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 const TAU = Math.PI * 2;
 const PREVIEW_PERIODS = 3;
 const BASE_FREQUENCY_HZ = 220;
+const INSPECTOR_SCROLL_GRAPHS_PER_SECOND = 1;
 
 type WaveType = "sine" | "triangle" | "square" | "saw" | "custom" | "humps";
 const CUSTOM_MODE_COUNT = 10;
@@ -115,6 +116,7 @@ function makeWavePath(opts: {
   width: number;
   height: number;
   seconds: number;
+  timeOffsetSec?: number;
   samples?: number;
   yPad?: number;
 }) {
@@ -125,6 +127,7 @@ function makeWavePath(opts: {
     width,
     height,
     seconds,
+    timeOffsetSec = 0,
     samples = 220,
     yPad = 10,
     customModes,
@@ -141,7 +144,7 @@ function makeWavePath(opts: {
   let d = "";
   for (let i = 0; i <= samples; i++) {
     const x = (i / samples) * width;
-    const t = (i / samples) * seconds;
+    const t = timeOffsetSec + (i / samples) * seconds;
     const yVal = waveSample(type, t, freqHz, customModes);
     const y = midY - yVal * scaleY;
     d += i === 0 ? `M ${x.toFixed(2)} ${y.toFixed(2)}` : ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
@@ -222,6 +225,7 @@ export default function SoundWavesPresentationMockup() {
   const [playing, setPlaying] = useState<null | "base" | "modified" | "inspectorSample" | "timeline" | "customDraft" | "tilePreview">(null);
   const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
+  const [inspectorAnimationProgressSec, setInspectorAnimationProgressSec] = useState(0);
 
   const ensureAudioContext = useCallback(async () => {
     let ctx = audioCtxRef.current;
@@ -599,6 +603,25 @@ export default function SoundWavesPresentationMockup() {
     playing === "timeline" && timelineProgress != null ? (timelineProgress * 5) % 1 : 0;
   const timelineProgressPct = (timelineProgress ?? 0) * 100;
 
+  useEffect(() => {
+    if (playing !== "base" && playing !== "modified") return;
+
+    const start = performance.now();
+    let animationFrameId: number;
+
+    const tick = (now: number) => {
+      const elapsedSec = (now - start) / 1000;
+      setInspectorAnimationProgressSec(elapsedSec);
+      animationFrameId = window.requestAnimationFrame(tick);
+    };
+
+    animationFrameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [playing]);
+
   const playTimeline = useCallback(async () => {
     stopPlayback(true);
 
@@ -670,7 +693,11 @@ export default function SoundWavesPresentationMockup() {
 
   const baseStrokeWidth = playing === "base" ? 6 : 4;
   const modifiedStrokeWidth = playing === "modified" ? 6 : 4;
-
+  const inspectorWindowSec = secondsForPeriods(BASE_FREQUENCY_HZ);
+  const inspectorTimeOffsetSec =
+    (playing === "base" || playing === "modified" ? inspectorAnimationProgressSec : 0) *
+    INSPECTOR_SCROLL_GRAPHS_PER_SECOND *
+    inspectorWindowSec;
 
   const basePath = useMemo(() => {
     return makeWavePath({
@@ -679,12 +706,13 @@ export default function SoundWavesPresentationMockup() {
       freqHz: BASE_FREQUENCY_HZ,
       width: 760,
       height: 280,
-      seconds: secondsForPeriods(BASE_FREQUENCY_HZ),
+      seconds: inspectorWindowSec,
+      timeOffsetSec: inspectorTimeOffsetSec,
       samples: 320,
       yPad: 14,
       customModes,
     });
-  }, [waveType, customModes]);
+  }, [waveType, customModes, inspectorWindowSec, inspectorTimeOffsetSec]);
 
   const modifiedPath = useMemo(() => {
     return makeWavePath({
@@ -693,12 +721,13 @@ export default function SoundWavesPresentationMockup() {
       freqHz,
       width: 760,
       height: 280,
-      seconds: secondsForPeriods(BASE_FREQUENCY_HZ),
+      seconds: inspectorWindowSec,
+      timeOffsetSec: inspectorTimeOffsetSec,
       samples: 320,
       yPad: 14,
       customModes,
     });
-  }, [waveType, amp, freqHz, customModes]);
+  }, [waveType, amp, freqHz, customModes, inspectorWindowSec, inspectorTimeOffsetSec]);
 
   const customDraftPath = useMemo(() => {
     return makeWavePath({
