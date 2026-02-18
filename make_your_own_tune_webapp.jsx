@@ -70,7 +70,7 @@ function waveSample(type: WaveType, tSec: number, freqHz: number): number {
 
     case "humps": {
       // Two-hump envelope (visual variety): |sin| with mild smoothing
-      const s = Math.abs(Math.sin(phase));
+      const s = Math.abs(Math.sin(phase * 0.5));
       // Shape it to emphasize peaks
       return 2 * Math.pow(s, 0.8) - 1;
     }
@@ -274,7 +274,7 @@ export default function SoundWavesPresentationMockup() {
                 return 2 * x - 1;
               }
               case 'humps': {
-                const s = Math.abs(Math.sin(phase));
+                const s = Math.abs(Math.sin(phase * 0.5));
                 return 2 * Math.pow(s, 0.8) - 1;
               }
               case 'noise':
