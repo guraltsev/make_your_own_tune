@@ -734,16 +734,16 @@ export default function SoundWavesPresentationMockup() {
   const customDraftPath = useMemo(() => {
     return makeWavePath({
       type: "custom",
-      amp,
+      amp: 2,
       freqHz,
       width: 760,
-      height: 260,
+      height: 280,
       seconds: secondsForPeriods(freqHz),
       samples: 320,
-      yPad: 8,
+      yPad: 6,
       customModes: normalizeModes(customDraftModes),
     });
-  }, [amp, freqHz, customDraftModes]);
+  }, [freqHz, customDraftModes]);
 
   function placeInSlot(i: number) {
     setSlots((prev) => {
@@ -1266,8 +1266,8 @@ export default function SoundWavesPresentationMockup() {
                   <span className="text-xs text-slate-500">2 seconds</span>
                 </div>
                 <div className="mt-2 text-center text-sm font-medium text-slate-700">Playing at {formatHz(freqHz)}</div>
-                <svg viewBox="0 0 760 260" className="mt-3 h-64 w-full rounded-xl border bg-white">
-                  <line x1="0" y1="130" x2="760" y2="130" stroke="rgb(226,232,240)" strokeWidth="2" />
+                <svg viewBox="0 0 760 280" className="mt-3 h-72 w-full rounded-xl border bg-white">
+                  <line x1="0" y1="140" x2="760" y2="140" stroke="rgb(226,232,240)" strokeWidth="2" />
                   <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
                 </svg>
               </button>
