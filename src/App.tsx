@@ -24,7 +24,7 @@ const BASE_FREQUENCY_HZ = 220;
 const INSPECTOR_SCROLL_GRAPHS_PER_SECOND = 1;
 
 type WaveType = "sine" | "triangle" | "square" | "saw" | "custom" | "humps";
-const CUSTOM_MODE_COUNT = 10;
+const CUSTOM_MODE_COUNT = 15;
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));
@@ -174,7 +174,7 @@ const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
   { type: "triangle", name: "Triangle", subtitle: "linear ramps" },
   { type: "square", name: "Square", subtitle: "rich harmonics" },
   { type: "saw", name: "Sawtooth", subtitle: "bright" },
-  { type: "custom", name: "Custom", subtitle: "10 modes" },
+  { type: "custom", name: "Custom", subtitle: `${CUSTOM_MODE_COUNT} modes` },
   { type: "humps", name: "Humps", subtitle: "envelope" },
 ];
 
@@ -1256,12 +1256,12 @@ export default function SoundWavesPresentationMockup() {
       </div>
 
       {customEditorOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="w-full max-w-5xl max-h-[90vh] overflow-auto rounded-3xl border bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-h-[96vh] overflow-auto rounded-3xl border bg-white shadow-2xl" style={{ maxWidth: "min(96vw, 1400px)" }}>
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500">Custom waveform applet</div>
-                <div className="text-lg font-semibold">Mix 10 sine modes</div>
+                <div className="text-lg font-semibold">Mix {CUSTOM_MODE_COUNT} sine modes</div>
               </div>
               <button onClick={closeCustomEditor} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Close</button>
             </div>
@@ -1273,8 +1273,8 @@ export default function SoundWavesPresentationMockup() {
                   <span className="text-xs text-slate-500">2 seconds</span>
                 </div>
                 <div className="mt-2 text-center text-sm font-medium text-slate-700">Playing at {formatHz(freqHz)}</div>
-                <svg viewBox="0 0 760 280" className="mt-3 h-72 w-full rounded-xl border bg-white">
-                  <line x1="0" y1="140" x2="760" y2="140" stroke="rgb(226,232,240)" strokeWidth="2" />
+                <svg viewBox="0 0 980 360" className="mt-3 w-full rounded-xl border bg-white" style={{ height: "24rem" }}>
+                  <line x1="0" y1="180" x2="980" y2="180" stroke="rgb(226,232,240)" strokeWidth="2" />
                   <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
                 </svg>
               </button>
