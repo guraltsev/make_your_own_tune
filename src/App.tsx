@@ -547,7 +547,7 @@ export default function SoundWavesPresentationMockup() {
 
     const ctx = await ensureSynthNode();
     const g = masterGainRef.current;
-    const sampleParams = { freqHz, amp: 1.0, waveType, customModes };
+    const sampleParams = { freqHz, amp, waveType, customModes };
 
     if (g) {
       const now = ctx.currentTime;
@@ -560,7 +560,11 @@ export default function SoundWavesPresentationMockup() {
     }
 
     setPlaying("inspectorSample");
-  }, [customModes, ensureSynthNode, freqHz, playing, postParamsNow, stopPlayback, waveType]);
+
+    stopTimerRef.current = window.setTimeout(() => {
+      stopPlayback();
+    }, 10_000);
+  }, [amp, customModes, ensureSynthNode, freqHz, playing, postParamsNow, stopPlayback, waveType]);
 
   const playWaveTilePreview = useCallback(
     async (type: WaveType) => {
@@ -1025,7 +1029,16 @@ export default function SoundWavesPresentationMockup() {
 
                 {/* Sliders */}
                 <div className="w-[320px] border-l p-6 bg-white">
-                  <div className="text-sm font-semibold">Controls</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold">Controls</div>
+                    <button
+                      type="button"
+                      onClick={playInspectorSample}
+                      className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50"
+                    >
+                      {playing === "inspectorSample" ? "Pause" : "Play"}
+                    </button>
+                  </div>
 
                   <div className="mt-4 space-y-5">
                     <div className="rounded-2xl border bg-slate-50 p-4">
@@ -1091,15 +1104,8 @@ export default function SoundWavesPresentationMockup() {
                         {WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType}
                       </div>
                       <div className="mt-1 text-sm text-slate-600">{formatHz(freqHz)} · amp {amp.toFixed(2)}</div>
-                      <button
-                        type="button"
-                        onClick={playInspectorSample}
-                        className="mt-3 w-full rounded-xl border bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
-                      >
-                        {playing === "inspectorSample" ? "Stop sample" : "Play sample"}
-                      </button>
                       <div className="mt-2 text-[11px] text-slate-500">
-                        Plays the selected waveform sample at the current frequency from Part 2.
+                        Use the play/pause button in the Controls header to hear this modified waveform for up to 10 seconds.
                       </div>
                     </div>
                   </div>
