@@ -24,7 +24,7 @@ const BASE_FREQUENCY_HZ = 220;
 const INSPECTOR_SCROLL_GRAPHS_PER_SECOND = 1;
 
 type WaveType = "sine" | "triangle" | "square" | "saw" | "custom" | "humps";
-const CUSTOM_MODE_COUNT = 10;
+const CUSTOM_MODE_COUNT = 15;
 
 function clamp(x: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, x));
@@ -174,8 +174,16 @@ const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
   { type: "triangle", name: "Triangle", subtitle: "linear ramps" },
   { type: "square", name: "Square", subtitle: "rich harmonics" },
   { type: "saw", name: "Sawtooth", subtitle: "bright" },
-  { type: "custom", name: "Custom", subtitle: "10 modes" },
+  { type: "custom", name: "Custom", subtitle: "15 modes" },
   { type: "humps", name: "Humps", subtitle: "envelope" },
+];
+
+const REFERENCE_WAVES: Array<{ type: Exclude<WaveType, "custom">; name: string }> = [
+  { type: "sine", name: "Sine" },
+  { type: "triangle", name: "Triangle" },
+  { type: "square", name: "Square" },
+  { type: "saw", name: "Saw" },
+  { type: "humps", name: "Humps" },
 ];
 
 function formatHz(x: number) {
@@ -206,6 +214,8 @@ export default function SoundWavesPresentationMockup() {
   const [customModes, setCustomModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
   const [customDraftModes, setCustomDraftModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
   const [customEditorOpen, setCustomEditorOpen] = useState(false);
+  const [referenceWaveType, setReferenceWaveType] = useState<Exclude<WaveType, "custom">>("sine");
+  const [showFourierModes, setShowFourierModes] = useState(false);
 
   // Amani and Jacob are cool.
   // ----------------------------
@@ -272,9 +282,9 @@ export default function SoundWavesPresentationMockup() {
             this.waveB = 'sine';
             this.mix = 1; // 1 -> fully waveB
 
-            this.currentModes = Array(10).fill(0);
+            this.currentModes = Array(15).fill(0);
             this.currentModes[0] = 1;
-            this.targetModes = Array(10).fill(0);
+            this.targetModes = Array(15).fill(0);
             this.targetModes[0] = 1;
 
             this.port.onmessage = (e) => {
@@ -301,7 +311,7 @@ export default function SoundWavesPresentationMockup() {
               }
 
               if (Array.isArray(m.customModes)) {
-                for (let i = 0; i < 10; i++) {
+                for (let i = 0; i < 15; i++) {
                   const v = Number(m.customModes[i] ?? 0);
                   this.targetModes[i] = isFinite(v) ? v : 0;
                 }
@@ -328,7 +338,7 @@ export default function SoundWavesPresentationMockup() {
               }
               case 'custom': {
                 let sum = 0;
-                for (let i = 0; i < 10; i++) {
+                for (let i = 0; i < 15; i++) {
                   sum += this.currentModes[i] * Math.sin(phase * (i + 1));
                 }
                 return Math.max(-1, Math.min(1, sum));
@@ -356,7 +366,7 @@ export default function SoundWavesPresentationMockup() {
               this.currentFreq += (this.targetFreq - this.currentFreq) * kFreq;
               this.currentAmp += (this.targetAmp - this.currentAmp) * kAmp;
               this.mix += (1 - this.mix) * kWave;
-              for (let j = 0; j < 10; j++) {
+              for (let j = 0; j < 15; j++) {
                 this.currentModes[j] += (this.targetModes[j] - this.currentModes[j]) * kWave;
               }
 
@@ -697,6 +707,8 @@ export default function SoundWavesPresentationMockup() {
 
   const baseStrokeWidth = playing === "base" ? 6 : 4;
   const modifiedStrokeWidth = playing === "modified" ? 6 : 4;
+  const inspectorGraphWidth = 920;
+  const inspectorGraphHeight = 360;
   const inspectorWindowSec = secondsForPeriods(BASE_FREQUENCY_HZ);
   const inspectorAnimatedOffsetSec =
     (playing === "base" || playing === "modified" || playing === "inspectorSample" ? inspectorAnimationProgressSec : 0) *
@@ -706,43 +718,79 @@ export default function SoundWavesPresentationMockup() {
   const modifiedInspectorTimeOffsetSec =
     playing === "modified" || playing === "inspectorSample" ? inspectorAnimatedOffsetSec : 0;
 
+  const referencePath = useMemo(() => {
+    return makeWavePath({
+      type: referenceWaveType,
+      amp: 1,
+      freqHz,
+      width: inspectorGraphWidth,
+      height: inspectorGraphHeight,
+      seconds: inspectorWindowSec,
+      timeOffsetSec: modifiedInspectorTimeOffsetSec,
+      samples: 360,
+      yPad: 16,
+    });
+  }, [referenceWaveType, freqHz, inspectorWindowSec, modifiedInspectorTimeOffsetSec]);
+
+  const fourierModePaths = useMemo(() => {
+    if (!(showFourierModes && waveType === "custom")) return [];
+    const normalizedModes = normalizeModes(customModes);
+    return normalizedModes
+      .map((mode, index) => ({ mode, index }))
+      .filter(({ mode }) => Math.abs(mode) > 0.001)
+      .map(({ mode, index }) =>
+        makeWavePath({
+          type: "custom",
+          amp: 2,
+          freqHz,
+          width: inspectorGraphWidth,
+          height: inspectorGraphHeight,
+          seconds: inspectorWindowSec,
+          timeOffsetSec: modifiedInspectorTimeOffsetSec,
+          samples: 360,
+          yPad: 16,
+          customModes: Array.from({ length: CUSTOM_MODE_COUNT }, (_, i) => (i === index ? mode : 0)),
+        })
+      );
+  }, [showFourierModes, waveType, customModes, freqHz, inspectorWindowSec, modifiedInspectorTimeOffsetSec]);
+
   const basePath = useMemo(() => {
     return makeWavePath({
       type: waveType,
       amp: 1,
       freqHz: BASE_FREQUENCY_HZ,
-      width: 760,
-      height: 280,
+      width: inspectorGraphWidth,
+      height: inspectorGraphHeight,
       seconds: inspectorWindowSec,
       timeOffsetSec: baseInspectorTimeOffsetSec,
-      samples: 320,
-      yPad: 14,
+      samples: 360,
+      yPad: 16,
       customModes,
     });
-  }, [waveType, customModes, inspectorWindowSec, baseInspectorTimeOffsetSec]);
+  }, [waveType, customModes, inspectorGraphWidth, inspectorGraphHeight, inspectorWindowSec, baseInspectorTimeOffsetSec]);
 
   const modifiedPath = useMemo(() => {
     return makeWavePath({
       type: waveType,
       amp,
       freqHz,
-      width: 760,
-      height: 280,
+      width: inspectorGraphWidth,
+      height: inspectorGraphHeight,
       seconds: inspectorWindowSec,
       timeOffsetSec: modifiedInspectorTimeOffsetSec,
-      samples: 320,
-      yPad: 14,
+      samples: 360,
+      yPad: 16,
       customModes,
     });
-  }, [waveType, amp, freqHz, customModes, inspectorWindowSec, modifiedInspectorTimeOffsetSec]);
+  }, [waveType, amp, freqHz, customModes, inspectorGraphWidth, inspectorGraphHeight, inspectorWindowSec, modifiedInspectorTimeOffsetSec]);
 
   const customDraftPath = useMemo(() => {
     return makeWavePath({
       type: "custom",
       amp: 2,
       freqHz,
-      width: 760,
-      height: 280,
+      width: 920,
+      height: 360,
       seconds: secondsForPeriods(freqHz),
       samples: 320,
       yPad: 6,
@@ -951,7 +999,14 @@ export default function SoundWavesPresentationMockup() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
+                  <label className="text-xs text-slate-600 flex items-center gap-2 rounded-lg border bg-slate-50 px-2 py-1">
+                    <input
+                      type="checkbox"
+                      checked={showFourierModes}
+                      onChange={(e) => setShowFourierModes(e.target.checked)}
+                    />
+                    Show Fourier modes
+                  </label>
                   <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
                   <div className="text-xs text-slate-600">Modified</div>
                   <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
@@ -970,16 +1025,62 @@ export default function SoundWavesPresentationMockup() {
                       <span className="text-xs text-slate-500">window: 3 periods at 220 Hz</span>
                     </div>
 
+                    <div className="mt-3 grid grid-cols-5 gap-2">
+                      {REFERENCE_WAVES.map((ref) => {
+                        const active = referenceWaveType === ref.type;
+                        const previewPath = makeWavePath({
+                          type: ref.type,
+                          amp: 1,
+                          freqHz: 4,
+                          width: 120,
+                          height: 54,
+                          seconds: secondsForPeriods(4),
+                          samples: 90,
+                          yPad: 8,
+                        });
+                        return (
+                          <button
+                            key={ref.type}
+                            type="button"
+                            onClick={() => setReferenceWaveType(ref.type)}
+                            className={
+                              "rounded-lg border p-1 transition " +
+                              (active ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300")
+                            }
+                          >
+                            <svg viewBox="0 0 120 54" className="h-8 w-full">
+                              <line x1="0" y1="27" x2="120" y2="27" stroke="rgb(226,232,240)" strokeWidth="1" />
+                              <path d={previewPath} fill="none" stroke="rgb(71,85,105)" strokeWidth="2" />
+                            </svg>
+                            <div className="text-[10px] text-slate-500">{ref.name}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     <div className="mt-3 flex-1 min-h-0 rounded-xl bg-white border overflow-hidden">
                       <svg
-                        viewBox="0 0 760 280"
+                        viewBox={`0 0 ${inspectorGraphWidth} ${inspectorGraphHeight}`}
                         className="w-full h-full block"
                         preserveAspectRatio="none"
                         aria-label="Wave plot"
                       >
                         {/* axes */}
-                        <line x1="0" y1="140" x2="760" y2="140" stroke="rgb(226,232,240)" strokeWidth="2" />
-                        <line x1="40" y1="0" x2="40" y2="280" stroke="rgb(226,232,240)" strokeWidth="2" />
+                        <line x1="0" y1="180" x2="920" y2="180" stroke="rgb(226,232,240)" strokeWidth="2" />
+                        <line x1="48" y1="0" x2="48" y2="360" stroke="rgb(226,232,240)" strokeWidth="2" />
+
+                        <path d={referencePath} fill="none" stroke="rgb(59,130,246)" strokeOpacity="0.16" strokeWidth="8" />
+
+                        {fourierModePaths.map((modePath, index) => (
+                          <path
+                            key={index}
+                            d={modePath}
+                            fill="none"
+                            stroke="rgb(34,197,94)"
+                            strokeOpacity="0.22"
+                            strokeWidth="2"
+                          />
+                        ))}
 
                         {/* base */}
                         <path
@@ -1016,14 +1117,14 @@ export default function SoundWavesPresentationMockup() {
                         />
 
                         {/* labels */}
-                        <text x="48" y="20" fontSize="12" fill="rgb(100,116,139)">Amplitude</text>
-                        <text x="690" y="268" fontSize="12" fill="rgb(100,116,139)">time</text>
+                        <text x="54" y="24" fontSize="12" fill="rgb(100,116,139)">Amplitude</text>
+                        <text x="846" y="344" fontSize="12" fill="rgb(100,116,139)">time</text>
                       </svg>
                     </div>
 
                     <div className="mt-3 text-xs text-slate-500">
-                      This plot overlays a base wave (220 Hz, amp 1) with the modified wave (current sliders). Click either curve to
-                      preview for 2 seconds.
+                      This plot overlays a base wave (220 Hz, amp 1) with the modified wave (current sliders). Use the top mini-tiles
+                      to choose a faint reference underlay, and optionally show faint green Fourier modes for custom waves.
                     </div>
                   </div>
                 </div>
@@ -1257,24 +1358,24 @@ export default function SoundWavesPresentationMockup() {
 
       {customEditorOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="w-full max-w-5xl max-h-[90vh] overflow-auto rounded-3xl border bg-white shadow-2xl">
+          <div className="w-full max-w-[95vw] max-h-[96vh] overflow-auto rounded-3xl border bg-white shadow-2xl">
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500">Custom waveform applet</div>
-                <div className="text-lg font-semibold">Mix 10 sine modes</div>
+                <div className="text-lg font-semibold">Mix 15 sine modes</div>
               </div>
               <button onClick={closeCustomEditor} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Close</button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
               <button onClick={playCustomDraft} className="rounded-2xl border bg-slate-50 p-4 text-left hover:border-slate-400">
                 <div className="text-sm font-medium flex items-center justify-between">
                   <span>Click waveform to play preview</span>
                   <span className="text-xs text-slate-500">2 seconds</span>
                 </div>
                 <div className="mt-2 text-center text-sm font-medium text-slate-700">Playing at {formatHz(freqHz)}</div>
-                <svg viewBox="0 0 760 280" className="mt-3 h-72 w-full rounded-xl border bg-white">
-                  <line x1="0" y1="140" x2="760" y2="140" stroke="rgb(226,232,240)" strokeWidth="2" />
+                <svg viewBox="0 0 920 360" className="mt-3 h-[30rem] w-full rounded-xl border bg-white">
+                  <line x1="0" y1="180" x2="920" y2="180" stroke="rgb(226,232,240)" strokeWidth="2" />
                   <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
                 </svg>
               </button>
