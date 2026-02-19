@@ -608,7 +608,7 @@ export default function SoundWavesPresentationMockup() {
   const timelineProgressPct = (timelineProgress ?? 0) * 100;
 
   useEffect(() => {
-    if (playing !== "base" && playing !== "modified") return;
+    if (playing !== "base" && playing !== "modified" && playing !== "inspectorSample") return;
 
     const start = performance.now();
     let animationFrameId: number;
@@ -699,11 +699,12 @@ export default function SoundWavesPresentationMockup() {
   const modifiedStrokeWidth = playing === "modified" ? 6 : 4;
   const inspectorWindowSec = secondsForPeriods(BASE_FREQUENCY_HZ);
   const inspectorAnimatedOffsetSec =
-    (playing === "base" || playing === "modified" ? inspectorAnimationProgressSec : 0) *
+    (playing === "base" || playing === "modified" || playing === "inspectorSample" ? inspectorAnimationProgressSec : 0) *
     INSPECTOR_SCROLL_GRAPHS_PER_SECOND *
     inspectorWindowSec;
   const baseInspectorTimeOffsetSec = playing === "base" ? inspectorAnimatedOffsetSec : 0;
-  const modifiedInspectorTimeOffsetSec = playing === "modified" ? inspectorAnimatedOffsetSec : 0;
+  const modifiedInspectorTimeOffsetSec =
+    playing === "modified" || playing === "inspectorSample" ? inspectorAnimatedOffsetSec : 0;
 
   const basePath = useMemo(() => {
     return makeWavePath({
