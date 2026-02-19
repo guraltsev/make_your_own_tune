@@ -694,10 +694,12 @@ export default function SoundWavesPresentationMockup() {
   const baseStrokeWidth = playing === "base" ? 6 : 4;
   const modifiedStrokeWidth = playing === "modified" ? 6 : 4;
   const inspectorWindowSec = secondsForPeriods(BASE_FREQUENCY_HZ);
-  const inspectorTimeOffsetSec =
+  const inspectorAnimatedOffsetSec =
     (playing === "base" || playing === "modified" ? inspectorAnimationProgressSec : 0) *
     INSPECTOR_SCROLL_GRAPHS_PER_SECOND *
     inspectorWindowSec;
+  const baseInspectorTimeOffsetSec = playing === "base" ? inspectorAnimatedOffsetSec : 0;
+  const modifiedInspectorTimeOffsetSec = playing === "modified" ? inspectorAnimatedOffsetSec : 0;
 
   const basePath = useMemo(() => {
     return makeWavePath({
@@ -707,12 +709,12 @@ export default function SoundWavesPresentationMockup() {
       width: 760,
       height: 280,
       seconds: inspectorWindowSec,
-      timeOffsetSec: inspectorTimeOffsetSec,
+      timeOffsetSec: baseInspectorTimeOffsetSec,
       samples: 320,
       yPad: 14,
       customModes,
     });
-  }, [waveType, customModes, inspectorWindowSec, inspectorTimeOffsetSec]);
+  }, [waveType, customModes, inspectorWindowSec, baseInspectorTimeOffsetSec]);
 
   const modifiedPath = useMemo(() => {
     return makeWavePath({
@@ -722,12 +724,12 @@ export default function SoundWavesPresentationMockup() {
       width: 760,
       height: 280,
       seconds: inspectorWindowSec,
-      timeOffsetSec: inspectorTimeOffsetSec,
+      timeOffsetSec: modifiedInspectorTimeOffsetSec,
       samples: 320,
       yPad: 14,
       customModes,
     });
-  }, [waveType, amp, freqHz, customModes, inspectorWindowSec, inspectorTimeOffsetSec]);
+  }, [waveType, amp, freqHz, customModes, inspectorWindowSec, modifiedInspectorTimeOffsetSec]);
 
   const customDraftPath = useMemo(() => {
     return makeWavePath({
