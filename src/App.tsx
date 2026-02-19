@@ -718,20 +718,6 @@ export default function SoundWavesPresentationMockup() {
   const modifiedInspectorTimeOffsetSec =
     playing === "modified" || playing === "inspectorSample" ? inspectorAnimatedOffsetSec : 0;
 
-  const referencePath = useMemo(() => {
-    return makeWavePath({
-      type: referenceWaveType,
-      amp: 1,
-      freqHz,
-      width: inspectorGraphWidth,
-      height: inspectorGraphHeight,
-      seconds: inspectorWindowSec,
-      timeOffsetSec: modifiedInspectorTimeOffsetSec,
-      samples: 360,
-      yPad: 16,
-    });
-  }, [referenceWaveType, freqHz, inspectorWindowSec, modifiedInspectorTimeOffsetSec]);
-
   const fourierModePaths = useMemo(() => {
     if (!(showFourierModes && waveType === "custom")) return [];
     const normalizedModes = normalizeModes(customModes);
@@ -797,6 +783,20 @@ export default function SoundWavesPresentationMockup() {
       customModes: normalizeModes(customDraftModes),
     });
   }, [freqHz, customDraftModes]);
+
+
+  const customEditorReferencePath = useMemo(() => {
+    return makeWavePath({
+      type: referenceWaveType,
+      amp: 2,
+      freqHz,
+      width: 920,
+      height: 360,
+      seconds: secondsForPeriods(freqHz),
+      samples: 320,
+      yPad: 6,
+    });
+  }, [referenceWaveType, freqHz]);
 
   function placeInSlot(i: number) {
     setSlots((prev) => {
@@ -1025,39 +1025,6 @@ export default function SoundWavesPresentationMockup() {
                       <span className="text-xs text-slate-500">window: 3 periods at 220 Hz</span>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-5 gap-2">
-                      {REFERENCE_WAVES.map((ref) => {
-                        const active = referenceWaveType === ref.type;
-                        const previewPath = makeWavePath({
-                          type: ref.type,
-                          amp: 1,
-                          freqHz: 4,
-                          width: 120,
-                          height: 54,
-                          seconds: secondsForPeriods(4),
-                          samples: 90,
-                          yPad: 8,
-                        });
-                        return (
-                          <button
-                            key={ref.type}
-                            type="button"
-                            onClick={() => setReferenceWaveType(ref.type)}
-                            className={
-                              "rounded-lg border p-1 transition " +
-                              (active ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300")
-                            }
-                          >
-                            <svg viewBox="0 0 120 54" className="h-8 w-full">
-                              <line x1="0" y1="27" x2="120" y2="27" stroke="rgb(226,232,240)" strokeWidth="1" />
-                              <path d={previewPath} fill="none" stroke="rgb(71,85,105)" strokeWidth="2" />
-                            </svg>
-                            <div className="text-[10px] text-slate-500">{ref.name}</div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
                     <div className="mt-3 flex-1 min-h-0 rounded-xl bg-white border overflow-hidden">
                       <svg
                         viewBox={`0 0 ${inspectorGraphWidth} ${inspectorGraphHeight}`}
@@ -1069,7 +1036,6 @@ export default function SoundWavesPresentationMockup() {
                         <line x1="0" y1="180" x2="920" y2="180" stroke="rgb(226,232,240)" strokeWidth="2" />
                         <line x1="48" y1="0" x2="48" y2="360" stroke="rgb(226,232,240)" strokeWidth="2" />
 
-                        <path d={referencePath} fill="none" stroke="rgb(59,130,246)" strokeOpacity="0.16" strokeWidth="8" />
 
                         {fourierModePaths.map((modePath, index) => (
                           <path
@@ -1123,8 +1089,7 @@ export default function SoundWavesPresentationMockup() {
                     </div>
 
                     <div className="mt-3 text-xs text-slate-500">
-                      This plot overlays a base wave (220 Hz, amp 1) with the modified wave (current sliders). Use the top mini-tiles
-                      to choose a faint reference underlay, and optionally show faint green Fourier modes for custom waves.
+                      This plot overlays a base wave (220 Hz, amp 1) with the modified wave (current sliders). Optionally show faint green Fourier modes for custom waves.
                     </div>
                   </div>
                 </div>
@@ -1368,17 +1333,52 @@ export default function SoundWavesPresentationMockup() {
             </div>
 
             <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <button onClick={playCustomDraft} className="rounded-2xl border bg-slate-50 p-4 text-left hover:border-slate-400">
+              <div className="rounded-2xl border bg-slate-50 p-4 text-left">
                 <div className="text-sm font-medium flex items-center justify-between">
-                  <span>Click waveform to play preview</span>
+                  <span>Reference + custom wave preview</span>
                   <span className="text-xs text-slate-500">2 seconds</span>
                 </div>
                 <div className="mt-2 text-center text-sm font-medium text-slate-700">Playing at {formatHz(freqHz)}</div>
-                <svg viewBox="0 0 920 360" className="mt-3 h-[30rem] w-full rounded-xl border bg-white">
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  {REFERENCE_WAVES.map((ref) => {
+                    const active = referenceWaveType === ref.type;
+                    const previewPath = makeWavePath({
+                      type: ref.type,
+                      amp: 1,
+                      freqHz: 4,
+                      width: 120,
+                      height: 54,
+                      seconds: secondsForPeriods(4),
+                      samples: 90,
+                      yPad: 8,
+                    });
+                    return (
+                      <button
+                        key={ref.type}
+                        type="button"
+                        onClick={() => setReferenceWaveType(ref.type)}
+                        className={
+                          "rounded-lg border p-1 transition " +
+                          (active ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300")
+                        }
+                      >
+                        <svg viewBox="0 0 120 54" className="h-8 w-full">
+                          <line x1="0" y1="27" x2="120" y2="27" stroke="rgb(226,232,240)" strokeWidth="1" />
+                          <path d={previewPath} fill="none" stroke="rgb(71,85,105)" strokeWidth="2" />
+                        </svg>
+                        <div className="text-[10px] text-slate-500">{ref.name}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button type="button" onClick={playCustomDraft} className="mt-3 w-full rounded-xl border border-slate-300 bg-white hover:border-slate-400 overflow-hidden">
+                  <svg viewBox="0 0 920 360" className="h-[30rem] w-full">
                   <line x1="0" y1="180" x2="920" y2="180" stroke="rgb(226,232,240)" strokeWidth="2" />
+                  <path d={customEditorReferencePath} fill="none" stroke="rgb(59,130,246)" strokeOpacity="0.16" strokeWidth="8" />
                   <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
                 </svg>
-              </button>
+                </button>
+              </div>
 
               <div className="rounded-2xl border bg-slate-50 p-4">
                 <div className="text-sm font-medium">Harmonic sliders</div>
