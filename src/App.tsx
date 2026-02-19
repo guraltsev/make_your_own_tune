@@ -42,9 +42,8 @@ function normalizeModes(modes: number[]) {
   return modes.map((value) => value / totalMagnitude);
 }
 
-function getBipolarSliderBackground(value: number) {
+function getBipolarSliderBackground(value: number, fillColor: string) {
   const trackColor = "rgb(226,232,240)";
-  const fillColor = "rgb(37,99,235)";
   const clamped = clamp(value, -1, 1);
   const pointPercent = ((clamped + 1) / 2) * 100;
 
@@ -53,6 +52,12 @@ function getBipolarSliderBackground(value: number) {
   }
 
   return `linear-gradient(to right, ${trackColor} 0%, ${trackColor} ${pointPercent}%, ${fillColor} ${pointPercent}%, ${fillColor} 50%, ${trackColor} 50%, ${trackColor} 100%)`;
+}
+
+function getModeColor(modeIndex: number) {
+  const t = clamp(modeIndex / (CUSTOM_MODE_COUNT - 1), 0, 1);
+  const hue = 0 + t * 220;
+  return `hsl(${hue.toFixed(1)} 85% 52%)`;
 }
 
 function waveSample(type: WaveType, tSec: number, freqHz: number, customModes?: number[]): number {
@@ -206,6 +211,7 @@ export default function SoundWavesPresentationMockup() {
   const [customModes, setCustomModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
   const [customDraftModes, setCustomDraftModes] = useState<number[]>(() => [...DEFAULT_CUSTOM_MODES]);
   const [customEditorOpen, setCustomEditorOpen] = useState(false);
+  const [showModeUnderlay, setShowModeUnderlay] = useState(false);
 
   // Amani and Jacob are cool.
   // ----------------------------
@@ -750,6 +756,26 @@ export default function SoundWavesPresentationMockup() {
     });
   }, [freqHz, customDraftModes]);
 
+  const customDraftModePaths = useMemo(
+    () =>
+      customDraftModes.map((mode, i) => {
+        const customMode = Array(CUSTOM_MODE_COUNT).fill(0);
+        customMode[i] = mode;
+        return makeWavePath({
+          type: "custom",
+          amp: 2,
+          freqHz,
+          width: 980,
+          height: 360,
+          seconds: secondsForPeriods(freqHz),
+          samples: 560,
+          yPad: 16,
+          customModes: customMode,
+        });
+      }),
+    [customDraftModes, freqHz]
+  );
+
   function placeInSlot(i: number) {
     setSlots((prev) => {
       const next = [...prev];
@@ -1270,11 +1296,37 @@ export default function SoundWavesPresentationMockup() {
               <button onClick={playCustomDraft} className="rounded-2xl border bg-slate-50 p-4 text-left hover:border-slate-400">
                 <div className="text-sm font-medium flex items-center justify-between">
                   <span>Click waveform to play preview</span>
-                  <span className="text-xs text-slate-500">2 seconds</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowModeUnderlay((prev) => !prev);
+                      }}
+                      className={
+                        "rounded-xl border bg-white px-3 py-1 text-xs " +
+                        (showModeUnderlay ? "border-blue-600 text-blue-600" : "text-slate-600")
+                      }
+                    >
+                      {showModeUnderlay ? "Hide" : "Show"} mode underlay
+                    </button>
+                    <span className="text-xs text-slate-500">2 seconds</span>
+                  </div>
                 </div>
                 <div className="mt-2 text-center text-sm font-medium text-slate-700">Playing at {formatHz(freqHz)}</div>
                 <svg viewBox="0 0 980 360" className="mt-3 w-full rounded-xl border bg-white" style={{ height: "24rem" }}>
                   <line x1="0" y1="180" x2="980" y2="180" stroke="rgb(226,232,240)" strokeWidth="2" />
+                  {showModeUnderlay &&
+                    customDraftModePaths.map((modePath, i) => (
+                      <path
+                        key={i}
+                        d={modePath}
+                        fill="none"
+                        stroke={getModeColor(i)}
+                        strokeWidth="2"
+                        opacity={0.24}
+                      />
+                    ))}
                   <path d={customDraftPath} fill="none" stroke="rgb(15,23,42)" strokeWidth="4" />
                 </svg>
               </button>
@@ -1286,7 +1338,7 @@ export default function SoundWavesPresentationMockup() {
                     <div key={i}>
                       <div className="flex items-center justify-between text-xs text-slate-600">
                         <span>
-                          sin(2π f <span className="text-blue-600">{i + 1}</span> x)
+                          sin(2π f <span style={{ color: getModeColor(i) }}>{i + 1}</span> x)
                         </span>
                         <span className="tabular-nums">{mode.toFixed(2)}</span>
                       </div>
@@ -1298,7 +1350,7 @@ export default function SoundWavesPresentationMockup() {
                         value={mode}
                         onChange={(e) => updateCustomMode(i, parseFloat(e.target.value))}
                         className="w-full bipolar-slider"
-                        style={{ background: getBipolarSliderBackground(mode) }}
+                        style={{ background: getBipolarSliderBackground(mode, getModeColor(i)) }}
                       />
                     </div>
                   ))}
