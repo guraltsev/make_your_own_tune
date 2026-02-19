@@ -684,10 +684,21 @@ export default function SoundWavesPresentationMockup() {
 
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
-    if (!playing || playing === "timeline" || playing === "customDraft" || playing === "tilePreview") return;
+    if (!playing || playing === "timeline" || playing === "tilePreview") return;
+
+    if (playing === "customDraft") {
+      scheduleParams({
+        freqHz,
+        amp,
+        waveType: "custom",
+        customModes: normalizeModes(customDraftModes),
+      });
+      return;
+    }
+
     const p = playing === "base" ? { freqHz: 220, amp: 1.0, waveType, customModes } : { freqHz, amp, waveType, customModes };
     scheduleParams(p);
-  }, [playing, waveType, amp, freqHz, customModes, scheduleParams]);
+  }, [playing, waveType, amp, freqHz, customModes, customDraftModes, scheduleParams]);
 
   // Cleanup on unmount.
   useEffect(() => {
