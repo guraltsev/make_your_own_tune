@@ -17,6 +17,7 @@ An interactive web app for exploring the **math and sound of waveforms** in a pr
   - [6) Audio synthesis model](#6-audio-synthesis-model)
 - [Architecture / Design / Developer Guide](#architecture--design--developer-guide)
 - [Where the main code lives (and how to edit it)](#where-the-main-code-lives-and-how-to-edit-it)
+- [How to change bubble placement in the top banner](#how-to-change-bubble-placement-in-the-top-banner)
 - [Tech stack](#tech-stack)
 - [High-level architecture](#high-level-architecture)
 - [Repository structure](#repository-structure)
@@ -182,6 +183,43 @@ If you want to make quick changes, most of the app behavior is in:
 5. Commit and push from Codespaces, then open a pull request.
 
 If you prefer local development, the same commands (`npm install`, `npm run dev`) work in any Node.js environment.
+
+## How to change bubble placement in the top banner
+
+The decorative bubbles are defined directly in **`index.html`** inside the `.bubble-layer` CSS rule.
+
+- File: `index.html`
+- Section: `<style> ... .bubble-layer { background-image: ... }`
+- What to edit: each `radial-gradient(...)` entry controls **one bubble**
+
+### Quick guide for non-developers
+
+Inside `.bubble-layer`, each line looks like this pattern:
+
+```css
+radial-gradient(circle at X% Y%, CORE_COLOR 0 CORE_RADIUS, RING_COLOR RING_START RING_END, transparent OUTER_EDGE)
+```
+
+- `X% Y%` = bubble position in the banner
+  - Smaller `Y%` moves it up, larger `Y%` moves it down.
+  - Negative or greater-than-100 `Y%` places bubble center outside the banner so only part of it is visible.
+- `CORE_RADIUS` = main bubble size (increase this to make bubbles larger).
+- `RING_START` / `RING_END` = bright magenta perimeter thickness and placement.
+- `transparent OUTER_EDGE` = where the bubble fully fades out.
+
+### Practical edits
+
+- To move bubbles away from the title text, increase their `Y%` values for bubbles near the top-center.
+- To make all bubbles bigger by a fixed amount, increase all radius stop numbers by a similar proportion.
+- To add a partially visible edge bubble, use a center outside bounds, e.g. `circle at 10% -20%` or `circle at 88% 118%`.
+
+After editing, run:
+
+```bash
+npm run dev
+```
+
+and refresh the page to see the changes.
 
 ## Tech stack
 
