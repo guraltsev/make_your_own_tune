@@ -17,20 +17,58 @@ body {
 }
 
 #main-title {
+    position: relative;
+    z-index: 3;
     text-align: center;
     font-size: 3em;
     color: #ffffff;
     margin-top: 50px;
     text-shadow: 2px 2px 4px #555;
 }
+
+.gold-pop {
+    color: #ffd700;
+    text-shadow:
+      0 0 6px rgba(255, 215, 0, 0.8),
+      0 0 14px rgba(255, 215, 0, 0.55),
+      2px 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.bubble-layer {
+    position: fixed;
+    opacity: 0.9;
+    top: 140px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(168, 85, 247, 0.28) 0 10px, transparent 11px),
+      radial-gradient(circle at 28% 42%, rgba(192, 132, 252, 0.25) 0 8px, transparent 9px),
+      radial-gradient(circle at 46% 24%, rgba(167, 139, 250, 0.23) 0 7px, transparent 8px),
+      radial-gradient(circle at 66% 38%, rgba(147, 51, 234, 0.26) 0 9px, transparent 10px),
+      radial-gradient(circle at 82% 20%, rgba(216, 180, 254, 0.24) 0 6px, transparent 7px),
+      radial-gradient(circle at 18% 72%, rgba(168, 85, 247, 0.22) 0 11px, transparent 12px),
+      radial-gradient(circle at 38% 66%, rgba(192, 132, 252, 0.20) 0 8px, transparent 9px),
+      radial-gradient(circle at 58% 78%, rgba(147, 51, 234, 0.21) 0 7px, transparent 8px),
+      radial-gradient(circle at 76% 64%, rgba(167, 139, 250, 0.20) 0 9px, transparent 10px),
+      radial-gradient(circle at 90% 82%, rgba(192, 132, 252, 0.18) 0 8px, transparent 9px);
+}
+
+#root {
+    position: relative;
+    z-index: 1;
+}
     </style>
-    <script type="module" crossorigin src="/make_your_own_tune/branch/background/assets/index-1fePs4c7.js"></script>
-    <link rel="stylesheet" crossorigin href="/make_your_own_tune/branch/background/assets/index-BJdE_0IG.css">
+    <script type="module" crossorigin src="/make_your_own_tune/branch/background/assets/index-2ZTsja65.js"></script>
+    <link rel="stylesheet" crossorigin href="/make_your_own_tune/branch/background/assets/index-BsEMaHHw.css">
   </head>
 
   
   <body>
-    <h1 id="main-title">(M)ake (A) (T)une (H)ere</h1>
+    <h1 id="main-title">(<span class="gold-pop">M</span>)ake (<span class="gold-pop">A</span>) (<span class="gold-pop">T</span>)une (<span class="gold-pop">H</span>)ere</h1>
+    <div class="bubble-layer" aria-hidden="true"></div>
     <div id="root"></div>
   </body>
 </html>
