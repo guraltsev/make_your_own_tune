@@ -16,13 +16,22 @@ body {
     align-items: center;
 }
 
+#top-banner {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
 #main-title {
     position: relative;
     z-index: 3;
     text-align: center;
     font-size: 3em;
     color: #ffffff;
-    margin-top: 50px;
+    margin: 50px 0 0;
     text-shadow: 2px 2px 4px #555;
 }
 
@@ -35,12 +44,9 @@ body {
 }
 
 .bubble-layer {
-    position: fixed;
+    position: absolute;
     opacity: 0.9;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 150px;
+    inset: 0;
     pointer-events: none;
     z-index: 2;
     background-image:
@@ -69,8 +75,10 @@ body {
 
   
   <body>
-    <h1 id="main-title">(<span class="gold-pop">M</span>)ake (<span class="gold-pop">A</span>) (<span class="gold-pop">T</span>)une (<span class="gold-pop">H</span>)ere</h1>
-    <div class="bubble-layer" aria-hidden="true"></div>
+    <div id="top-banner">
+      <h1 id="main-title">(<span class="gold-pop">M</span>)ake (<span class="gold-pop">A</span>) (<span class="gold-pop">T</span>)une (<span class="gold-pop">H</span>)ere</h1>
+      <div class="bubble-layer" aria-hidden="true"></div>
+    </div>
     <div id="root"></div>
   </body>
 </html>
