@@ -37,7 +37,7 @@ An interactive web app for exploring the **math and sound of waveforms** in a pr
 
 - **Github Pages URL (main):** https://guraltsev.github.io/make_your_own_tune/
 - **Pull request previews:** deployed via GitHub Pages preview deployments (GitHub-generated preview URL in the workflow run output).
-- **Branch previews:** not published as fixed `/branch/...` URLs in GitHub Actions mode.
+- **Branch previews:** published at fixed `/branch/<branch-name>/` URLs for every pushed branch except `gh-pages`.
 
 ---
 
