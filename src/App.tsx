@@ -204,7 +204,6 @@ type BrowserWindowWithWebkitAudio = Window & {
 // ----------------------------
 
 export default function SoundWavesPresentationMockup() {
-  const [title, setTitle] = useState("Math of Sound Waves");
   const [waveType, setWaveType] = useState<WaveType>("sine");
   const [amp, setAmp] = useState(1.0);
   const [freqHz, setFreqHz] = useState(220);
@@ -853,36 +852,13 @@ export default function SoundWavesPresentationMockup() {
 
   return (
     <div className="h-screen w-screen bg-slate-50 text-slate-900">
-      {/* Title bar */}
-      <div className="h-16 px-6 flex items-center justify-between border-b bg-white">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-sm font-semibold">
-            Ω
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wider text-slate-500">Presentation Mode</div>
-            <div className="text-xl font-semibold leading-tight truncate">{title}</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="hidden md:block w-[360px] rounded-xl border bg-slate-50 px-3 py-2 text-sm"
-            placeholder="Title"
-          />
-          <div className="text-xs text-slate-500 hidden lg:block">Select → Modify → Produce</div>
-        </div>
-      </div>
-
       {/* Main */}
-      <div className="h-[calc(100vh-4rem)] w-full flex">
+      <div className="h-full w-full flex">
         {/* Left column (1/3) */}
         <div className="w-1/3 min-w-[360px] border-r bg-white p-5">
           <div className="flex items-baseline justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500">1) Pick a wave</div>
+              <div className="text-xs uppercase tracking-wider text-slate-500">▶ 1) Select wave</div>
               <div className="text-lg font-semibold">Wave Library</div>
             </div>
             <div className="text-xs text-slate-500">6 tiles</div>
@@ -977,9 +953,9 @@ export default function SoundWavesPresentationMockup() {
         </div>
 
         {/* Right column (2/3) */}
-        <div className="w-2/3 flex flex-col">
+        <div className="w-2/3 flex flex-col gap-5 p-5 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50">
           {/* MODIFY (2/3 height) */}
-          <div className="flex-[2] p-5">
+          <div className="flex-[2]">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
@@ -1072,9 +1048,9 @@ export default function SoundWavesPresentationMockup() {
                     <button
                       type="button"
                       onClick={playInspectorSample}
-                      className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50"
+                      className="rounded-xl border bg-white px-6 py-3 text-base font-semibold leading-none hover:bg-slate-50"
                     >
-                      {playing === "inspectorSample" ? "Pause" : "Play"}
+                      {playing === "inspectorSample" ? "⏸ Pause" : "▶ Play"}
                     </button>
                   </div>
 
@@ -1153,7 +1129,7 @@ export default function SoundWavesPresentationMockup() {
           </div>
 
           {/* PRODUCE (1/3 height) */}
-          <div className="flex-[1] p-5 pt-0">
+          <div className="flex-[1]">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
