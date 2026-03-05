@@ -330,6 +330,7 @@ export default function SoundWavesPresentationMockup() {
   const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
   const [inspectorAnimationProgressSec, setInspectorAnimationProgressSec] = useState(0);
+  const [resizingSlotIndex, setResizingSlotIndex] = useState<number | null>(null);
 
   const ensureAudioContext = useCallback(async () => {
     let ctx = audioCtxRef.current;
@@ -971,28 +972,50 @@ export default function SoundWavesPresentationMockup() {
 
   function beginSlotResize(e: ReactPointerEvent<HTMLButtonElement>, index: number) {
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
     resizingSlotRef.current = {
       index,
       startX: e.clientX,
       startDurationSec: timelineSlots[index].durationSec,
     };
+    setResizingSlotIndex(index);
   }
 
-  function continueSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+  function continueSlotResize(clientX: number) {
     const state = resizingSlotRef.current;
     if (!state) return;
-    const deltaSeconds = (e.clientX - state.startX) / 120;
+    const deltaSeconds = (clientX - state.startX) / 120;
     const nextDuration = clamp(state.startDurationSec + deltaSeconds, MIN_SLOT_SECONDS, MAX_SLOT_SECONDS);
     updateSlotDuration(state.index, nextDuration);
   }
 
-  function endSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+  function endSlotResize() {
     if (resizingSlotRef.current) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
       resizingSlotRef.current = null;
+      setResizingSlotIndex(null);
     }
   }
+
+  useEffect(() => {
+    if (resizingSlotIndex == null) return;
+
+    function onPointerMove(e: PointerEvent) {
+      continueSlotResize(e.clientX);
+    }
+
+    function onPointerUp() {
+      endSlotResize();
+    }
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [resizingSlotIndex]);
 
   function openCustomEditor() {
     setCustomDraftModes([...customModes]);
@@ -1428,12 +1451,15 @@ export default function SoundWavesPresentationMockup() {
                               <button
                                 type="button"
                                 onPointerDown={(e) => beginSlotResize(e, i)}
-                                onPointerMove={continueSlotResize}
-                                onPointerUp={endSlotResize}
-                                onPointerCancel={endSlotResize}
-                                className="mt-2 h-2 w-full rounded-full bg-slate-200 cursor-col-resize"
+                                className={
+                                  "mt-2 h-4 w-full rounded-md border border-slate-300 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 cursor-col-resize " +
+                                  (resizingSlotIndex === i ? "ring-2 ring-blue-300 border-blue-400" : "hover:border-slate-400")
+                                }
                                 title="Drag to resize note length"
-                              />
+                                aria-label="Resize note length"
+                              >
+                                <span className="mx-auto block h-1 w-20 rounded-full bg-slate-500/70" />
+                              </button>
                             </div>
                             <div className="mt-2 flex gap-2">
                               <button
