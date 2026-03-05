@@ -188,13 +188,13 @@ const MIN_SLOT_SECONDS = 0.5;
 const MAX_SLOT_SECONDS = 2;
 const DEFAULT_SLOT_SECONDS = 1.5;
 
-const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
-  { type: "sine", name: "Sine", subtitle: "smooth" },
-  { type: "triangle", name: "Triangle", subtitle: "linear ramps" },
-  { type: "square", name: "Square", subtitle: "rich harmonics" },
-  { type: "saw", name: "Sawtooth", subtitle: "bright" },
-  { type: "custom", name: "Custom", subtitle: `${CUSTOM_MODE_COUNT} modes` },
-  { type: "humps", name: "Humps", subtitle: "envelope" },
+const WAVE_TILES: Array<{ type: WaveType; name: string }> = [
+  { type: "sine", name: "Sine" },
+  { type: "triangle", name: "Triangle" },
+  { type: "square", name: "Square" },
+  { type: "saw", name: "Sawtooth" },
+  { type: "custom", name: "Custom" },
+  { type: "humps", name: "Humps" },
 ];
 
 function formatHz(x: number) {
@@ -1100,17 +1100,14 @@ export default function SoundWavesPresentationMockup() {
                 <div
                   key={w.type}
                   className={
-                    "rounded-2xl border p-2 text-left shadow-sm transition " +
+                    "rounded-2xl border px-3 py-2.5 text-left shadow-sm transition " +
                     (selected
                       ? "border-slate-900 ring-2 ring-slate-900/10 bg-slate-50"
                       : "border-slate-200 hover:border-slate-300 bg-white")
                   }
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold">{w.name}</div>
-                      <div className="text-xs text-slate-500">{w.subtitle}</div>
-                    </div>
+                    <div className="font-semibold tracking-[0.01em]">{w.name}</div>
 
                     <div className="flex items-center gap-1.5">
                       <button
