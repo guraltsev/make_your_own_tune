@@ -16,7 +16,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #4FC3F7, #FFB74D, #81C784);
+  background: linear-gradient(135deg, #1e3a8a 0%, #22ff88 100%);
   font-family: 'Comic Sans MS', cursive, sans-serif; 
   
 }
@@ -47,7 +47,6 @@ body {
 .absolute { position: absolute; }
 .fixed { position: fixed; }
 .inset-0 { inset: 0; }
-.z-50 { z-index: 50; }
 
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

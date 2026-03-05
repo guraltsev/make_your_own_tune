@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 /**
  * Sound Waves Presentation Mockup
@@ -199,12 +199,93 @@ type BrowserWindowWithWebkitAudio = Window & {
   webkitAudioContext?: typeof AudioContext;
 };
 
+function BannerHeader({
+  left,
+  right,
+}: {
+  left: ReactNode;
+  right?: ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden border-b">
+      {/* Layer order is DOM order: gradient -> bubbles -> text; do not introduce z-index here. */}
+      <div className="relative px-6 py-4">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "linear-gradient(to right, rgb(248 250 252), rgb(239 246 255), rgb(241 245 249))" }}
+        />
+
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-8 left-10 h-16 w-16 rounded-full" style={{ background: "rgba(59,130,246,0.16)" }} />
+          <div className="absolute top-2 left-44 h-8 w-8 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
+          <div className="absolute bottom-0 left-1/3 h-10 w-10 rounded-full" style={{ background: "rgba(16,185,129,0.14)" }} />
+          <div className="absolute -top-10 right-24 h-16 w-16 rounded-full" style={{ background: "rgba(99,102,241,0.12)" }} />
+          <div className="absolute bottom-1 right-8 h-7 w-7 rounded-full" style={{ background: "rgba(59,130,246,0.2)" }} />
+        </div>
+
+        <div className="relative flex items-center justify-between">
+          {left}
+          {right}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppBanner() {
+  return (
+    <div className="overflow-hidden border-b">
+      <div className="relative px-6 py-6 flex items-center justify-center" style={{ minHeight: "150px" }}>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "linear-gradient(135deg, rgb(30 58 138), rgb(34 255 136))",
+          }}
+        />
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            opacity: 0.9,
+            backgroundImage:
+              "radial-gradient(circle at 6% 22%, rgba(180, 35, 255, 0.62) 0 10px, rgba(255, 0, 210, 0.97) 11px 13px, transparent 14px)," +
+              "radial-gradient(circle at 24% 50%, rgba(195, 55, 255, 0.58) 0 8px, rgba(255, 0, 210, 0.95) 9px 10px, transparent 11px)," +
+              "radial-gradient(circle at 52% 36%, rgba(178, 45, 255, 0.56) 0 7px, rgba(255, 0, 210, 0.95) 8px 9px, transparent 10px)," +
+              "radial-gradient(circle at 70% 42%, rgba(165, 18, 245, 0.6) 0 9px, rgba(255, 0, 210, 0.96) 10px 11px, transparent 13px)," +
+              "radial-gradient(circle at 94% 24%, rgba(210, 88, 255, 0.56) 0 5px, rgba(255, 0, 210, 0.93) 6px 8px, transparent 9px)," +
+              "radial-gradient(circle at 16% 76%, rgba(180, 35, 255, 0.54) 0 12px, rgba(255, 0, 210, 0.95) 13px 14px, transparent 16px)," +
+              "radial-gradient(circle at 36% 70%, rgba(195, 55, 255, 0.52) 0 8px, rgba(255, 0, 210, 0.92) 9px 10px, transparent 11px)," +
+              "radial-gradient(circle at 60% 82%, rgba(165, 18, 245, 0.52) 0 7px, rgba(255, 0, 210, 0.92) 8px 9px, transparent 10px)," +
+              "radial-gradient(circle at 80% 66%, rgba(178, 45, 255, 0.52) 0 9px, rgba(255, 0, 210, 0.93) 10px 11px, transparent 13px)," +
+              "radial-gradient(circle at 92% 84%, rgba(195, 55, 255, 0.48) 0 8px, rgba(255, 0, 210, 0.9) 9px 10px, transparent 11px)," +
+              "radial-gradient(circle at 10% -20%, rgba(165, 18, 245, 0.42) 0 32px, rgba(255, 0, 210, 0.9) 33px 36px, transparent 37px)," +
+              "radial-gradient(circle at 88% 118%, rgba(180, 35, 255, 0.4) 0 30px, rgba(255, 0, 210, 0.88) 31px 34px, transparent 35px)",
+          }}
+        />
+
+        <h1
+          className="relative text-center"
+          style={{
+            fontSize: "3em",
+            color: "#ffffff",
+            textShadow: "2px 2px 4px #555",
+          }}
+        >
+          (<span style={{ color: "#ffd700" }}>M</span>)ake (<span style={{ color: "#ffd700" }}>A</span>) (<span style={{ color: "#ffd700" }}>T</span>)une (<span style={{ color: "#ffd700" }}>H</span>)ere
+        </h1>
+      </div>
+    </div>
+  );
+}
+
 // ----------------------------
 // Main component
 // ----------------------------
 
 export default function SoundWavesPresentationMockup() {
-  const [title, setTitle] = useState("Math of Sound Waves");
   const [waveType, setWaveType] = useState<WaveType>("sine");
   const [amp, setAmp] = useState(1.0);
   const [freqHz, setFreqHz] = useState(220);
@@ -852,37 +933,16 @@ export default function SoundWavesPresentationMockup() {
   }
 
   return (
-    <div className="h-screen w-screen bg-slate-50 text-slate-900">
-      {/* Title bar */}
-      <div className="h-16 px-6 flex items-center justify-between border-b bg-white">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-sm font-semibold">
-            Ω
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wider text-slate-500">Presentation Mode</div>
-            <div className="text-xl font-semibold leading-tight truncate">{title}</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="hidden md:block w-[360px] rounded-xl border bg-slate-50 px-3 py-2 text-sm"
-            placeholder="Title"
-          />
-          <div className="text-xs text-slate-500 hidden lg:block">Select → Modify → Produce</div>
-        </div>
-      </div>
+    <div className="h-screen w-screen bg-slate-50 text-slate-900 flex flex-col">
+      <AppBanner />
 
       {/* Main */}
-      <div className="h-[calc(100vh-4rem)] w-full flex">
+      <div className="h-full w-full flex flex-1 min-h-0">
         {/* Left column (1/3) */}
         <div className="w-1/3 min-w-[360px] border-r bg-white p-5">
           <div className="flex items-baseline justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500">1) Pick a wave</div>
+              <div className="text-xs uppercase tracking-wider text-slate-500">▶ 1) Select wave</div>
               <div className="text-lg font-semibold">Wave Library</div>
             </div>
             <div className="text-xs text-slate-500">6 tiles</div>
@@ -977,24 +1037,27 @@ export default function SoundWavesPresentationMockup() {
         </div>
 
         {/* Right column (2/3) */}
-        <div className="w-2/3 flex flex-col">
+        <div className="w-2/3 flex flex-col gap-5 p-5 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50">
           {/* MODIFY (2/3 height) */}
-          <div className="flex-[2] p-5">
+          <div className="flex-[2]">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
-                  <div className="text-lg font-semibold">Wave Inspector</div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
-                  <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
-                  <div className="text-xs text-slate-600">Modified</div>
-                  <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
-                  <div className="text-xs text-slate-500">Base</div>
-                </div>
-              </div>
+              <BannerHeader
+                left={
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
+                    <div className="text-lg font-semibold">Wave Inspector</div>
+                  </div>
+                }
+                right={
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
+                    <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
+                    <div className="text-xs text-slate-600">Modified</div>
+                    <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
+                    <div className="text-xs text-slate-500">Base</div>
+                  </div>
+                }
+              />
 
               <div className="flex-1 flex min-h-0">
                 {/* Plot */}
@@ -1072,9 +1135,9 @@ export default function SoundWavesPresentationMockup() {
                     <button
                       type="button"
                       onClick={playInspectorSample}
-                      className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50"
+                      className="rounded-xl border bg-white px-6 py-3 text-base font-semibold leading-none hover:bg-slate-50"
                     >
-                      {playing === "inspectorSample" ? "Pause" : "Play"}
+                      {playing === "inspectorSample" ? "⏸ Pause" : "▶ Play"}
                     </button>
                   </div>
 
@@ -1153,7 +1216,7 @@ export default function SoundWavesPresentationMockup() {
           </div>
 
           {/* PRODUCE (1/3 height) */}
-          <div className="flex-[1] p-5 pt-0">
+          <div className="flex-[1]">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
@@ -1228,7 +1291,6 @@ export default function SoundWavesPresentationMockup() {
                               transformOrigin: "center",
                               transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease",
                               willChange: "transform",
-                              zIndex: isActive ? 2 : 1,
                             }}
                           >
                             {isActive && (
@@ -1293,9 +1355,9 @@ export default function SoundWavesPresentationMockup() {
       </div>
 
       {customEditorOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-h-[96vh] overflow-auto rounded-3xl border bg-white shadow-2xl" style={{ maxWidth: "min(96vw, 1400px)" }}>
-            <div className="px-6 py-4 border-b flex items-center justify-between">
+            <div className="px-6 py-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500">Custom waveform applet</div>
                 <div className="text-lg font-semibold">Mix {CUSTOM_MODE_COUNT} sine modes</div>
