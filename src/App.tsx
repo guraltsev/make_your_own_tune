@@ -208,14 +208,15 @@ function BannerHeader({
 }) {
   return (
     <div className="overflow-hidden border-b">
-      <div className="grid px-6 py-4">
+      {/* Layer order is DOM order: gradient -> bubbles -> text; do not introduce z-index here. */}
+      <div className="relative px-6 py-4">
         <div
           aria-hidden="true"
-          className="pointer-events-none"
-          style={{ gridArea: "1 / 1", background: "linear-gradient(to right, rgb(248 250 252), rgb(239 246 255), rgb(241 245 249))" }}
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "linear-gradient(to right, rgb(248 250 252), rgb(239 246 255), rgb(241 245 249))" }}
         />
 
-        <div aria-hidden="true" className="pointer-events-none relative" style={{ gridArea: "1 / 1" }}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div className="absolute -top-8 left-10 h-16 w-16 rounded-full" style={{ background: "rgba(59,130,246,0.16)" }} />
           <div className="absolute top-2 left-44 h-8 w-8 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
           <div className="absolute bottom-0 left-1/3 h-10 w-10 rounded-full" style={{ background: "rgba(16,185,129,0.14)" }} />
@@ -223,7 +224,7 @@ function BannerHeader({
           <div className="absolute bottom-1 right-8 h-7 w-7 rounded-full" style={{ background: "rgba(59,130,246,0.2)" }} />
         </div>
 
-        <div className="flex items-center justify-between" style={{ gridArea: "1 / 1" }}>
+        <div className="relative flex items-center justify-between">
           {left}
           {right}
         </div>
