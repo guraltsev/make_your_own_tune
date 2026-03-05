@@ -1074,8 +1074,10 @@ export default function SoundWavesPresentationMockup() {
           <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 overflow-hidden flex flex-col">
           <div className="flex items-baseline justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500">▶ 1) Select wave</div>
-              <div className="text-lg font-semibold">Wave Library</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold text-slate-900">▶ 1) Wave Library</span>
+                <span className="text-xs uppercase tracking-wider text-slate-500">Select wave</span>
+              </div>
             </div>
             <div className="text-xs text-slate-500">6 tiles</div>
           </div>
@@ -1174,8 +1176,10 @@ export default function SoundWavesPresentationMockup() {
               <BannerHeader
                 left={
                   <div>
-                    <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
-                    <div className="text-lg font-semibold">Wave Inspector</div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-slate-900">2) Wave Inspector</span>
+                      <span className="text-xs uppercase tracking-wider text-slate-500">Modify</span>
+                    </div>
                   </div>
                 }
                 right={
@@ -1351,8 +1355,10 @@ export default function SoundWavesPresentationMockup() {
           <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500">3) Produce</div>
-                  <div className="text-lg font-semibold">{formatSeconds(timelineDurationSec)} Timeline</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-bold text-slate-900">3) {formatSeconds(timelineDurationSec)} Timeline</span>
+                    <span className="text-xs uppercase tracking-wider text-slate-500">Produce</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
