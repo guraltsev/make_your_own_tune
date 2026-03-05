@@ -22,6 +22,7 @@ const TAU = Math.PI * 2;
 const PREVIEW_PERIODS = 3;
 const BASE_FREQUENCY_HZ = 220;
 const INSPECTOR_SCROLL_GRAPHS_PER_SECOND = 1;
+const PLAYBACK_FADE_SECONDS = 0.2;
 
 type WaveType = "sine" | "triangle" | "square" | "saw" | "custom" | "humps";
 const CUSTOM_MODE_COUNT = 15;
@@ -555,7 +556,8 @@ export default function SoundWavesPresentationMockup() {
       if (immediate) {
         g.gain.setValueAtTime(0.0001, now);
       } else {
-        g.gain.setTargetAtTime(0.0001, now, 0.02);
+        g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), now);
+        g.gain.linearRampToValueAtTime(0.0001, now + PLAYBACK_FADE_SECONDS);
       }
     }
 
@@ -582,7 +584,7 @@ export default function SoundWavesPresentationMockup() {
     }
 
     // Disconnect shortly after fade.
-    window.setTimeout(finishStop, 80);
+    window.setTimeout(finishStop, PLAYBACK_FADE_SECONDS * 1000 + 20);
   }, []);
 
   const playVariant = useCallback(
@@ -609,7 +611,7 @@ export default function SoundWavesPresentationMockup() {
         g.gain.cancelScheduledValues(now);
         g.gain.setValueAtTime(0.0001, now);
         postParamsNow(params);
-        g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+        g.gain.linearRampToValueAtTime(1.0, now + PLAYBACK_FADE_SECONDS);
       } else {
         postParamsNow(params);
       }
@@ -641,7 +643,7 @@ export default function SoundWavesPresentationMockup() {
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(0.0001, now);
       postParamsNow(sampleParams);
-      g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+      g.gain.linearRampToValueAtTime(1.0, now + PLAYBACK_FADE_SECONDS);
     } else {
       postParamsNow(sampleParams);
     }
@@ -671,7 +673,7 @@ export default function SoundWavesPresentationMockup() {
         g.gain.cancelScheduledValues(now);
         g.gain.setValueAtTime(0.0001, now);
         postParamsNow({ freqHz, amp: 1.0, waveType: type, customModes: previewModes });
-        g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+        g.gain.linearRampToValueAtTime(1.0, now + PLAYBACK_FADE_SECONDS);
       } else {
         postParamsNow({ freqHz, amp: 1.0, waveType: type, customModes: previewModes });
       }
@@ -733,7 +735,7 @@ export default function SoundWavesPresentationMockup() {
       const now = ctx.currentTime;
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(0.0001, now);
-      g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+      g.gain.linearRampToValueAtTime(1.0, now + PLAYBACK_FADE_SECONDS);
     }
 
     setPlaying("timeline");
@@ -924,7 +926,7 @@ export default function SoundWavesPresentationMockup() {
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(0.0001, now);
       postParamsNow({ freqHz, amp, waveType: "custom", customModes: draft });
-      g.gain.linearRampToValueAtTime(1.0, now + 0.03);
+      g.gain.linearRampToValueAtTime(1.0, now + PLAYBACK_FADE_SECONDS);
     }
     setPlaying("customDraft");
     stopTimerRef.current = window.setTimeout(() => {
