@@ -957,13 +957,21 @@ export default function SoundWavesPresentationMockup() {
           {/* MODIFY (2/3 height) */}
           <div className="flex-[2]">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
-                <div>
+              <div className="relative overflow-hidden px-6 py-4 border-b bg-gradient-to-r from-slate-50 via-blue-50 to-slate-100 flex items-center justify-between">
+                <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+                  <div className="absolute -top-8 left-10 h-16 w-16 rounded-full" style={{ background: "rgba(59,130,246,0.16)" }} />
+                  <div className="absolute top-2 left-44 h-8 w-8 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
+                  <div className="absolute bottom-0 left-1/3 h-10 w-10 rounded-full" style={{ background: "rgba(16,185,129,0.14)" }} />
+                  <div className="absolute -top-10 right-24 h-16 w-16 rounded-full" style={{ background: "rgba(99,102,241,0.12)" }} />
+                  <div className="absolute bottom-1 right-8 h-7 w-7 rounded-full" style={{ background: "rgba(59,130,246,0.2)" }} />
+                </div>
+
+                <div className="relative z-10">
                   <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
                   <div className="text-lg font-semibold">Wave Inspector</div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="relative z-10 flex items-center gap-2">
                   <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
                   <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
                   <div className="text-xs text-slate-600">Modified</div>
@@ -1271,7 +1279,7 @@ export default function SoundWavesPresentationMockup() {
       {customEditorOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-h-[96vh] overflow-auto rounded-3xl border bg-white shadow-2xl" style={{ maxWidth: "min(96vw, 1400px)" }}>
-            <div className="px-6 py-4 border-b flex items-center justify-between">
+            <div className="px-6 py-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500">Custom waveform applet</div>
                 <div className="text-lg font-semibold">Mix {CUSTOM_MODE_COUNT} sine modes</div>
