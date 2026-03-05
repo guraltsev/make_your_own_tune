@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 /**
  * Sound Waves Presentation Mockup
@@ -178,15 +178,15 @@ type Slot =
 type TimelineSlot = {
   id: number;
   slot: Slot;
-  weight: number;
+  durationSec: number;
 };
 
-const TIMELINE_TOTAL_SECONDS = 10;
 const MIN_TIMELINE_NOTES = 2;
-const DEFAULT_TIMELINE_NOTES = 3;
+const DEFAULT_TIMELINE_NOTES = 4;
 const MAX_TIMELINE_NOTES = 15;
-const MIN_SLOT_WEIGHT = 0.5;
-const MAX_SLOT_WEIGHT = 6;
+const MIN_SLOT_SECONDS = 0.5;
+const MAX_SLOT_SECONDS = 2;
+const DEFAULT_SLOT_SECONDS = 1.5;
 
 const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
   { type: "sine", name: "Sine", subtitle: "smooth" },
@@ -204,6 +204,10 @@ function formatHz(x: number) {
 
 function timeLabelForSlot(start: number, end: number) {
   return `${start.toFixed(1)}–${end.toFixed(1)}s`;
+}
+
+function formatSeconds(seconds: number) {
+  return `${seconds.toFixed(1)}s`;
 }
 
 type BrowserWindowWithWebkitAudio = Window & {
@@ -320,6 +324,7 @@ export default function SoundWavesPresentationMockup() {
   const timelineRafRef = useRef<number | null>(null);
   const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
+  const resizingSlotRef = useRef<{ index: number; startX: number; startDurationSec: number } | null>(null);
 
   const [playing, setPlaying] = useState<null | "base" | "modified" | "inspectorSample" | "timeline" | "customDraft" | "tilePreview">(null);
   const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
@@ -701,20 +706,28 @@ export default function SoundWavesPresentationMockup() {
 
   const nextTimelineIdRef = useRef(DEFAULT_TIMELINE_NOTES + 1);
   const [timelineSlots, setTimelineSlots] = useState<TimelineSlot[]>(
-    [...Array(DEFAULT_TIMELINE_NOTES)].map((_, index) => ({ id: index + 1, slot: { kind: "empty" }, weight: 1 }))
+    [...Array(DEFAULT_TIMELINE_NOTES)].map((_, index) => ({
+      id: index + 1,
+      slot: { kind: "empty" },
+      durationSec: DEFAULT_SLOT_SECONDS,
+    }))
   );
   const hasTimelineContent = useMemo(() => timelineSlots.some((entry) => entry.slot.kind === "wave"), [timelineSlots]);
+  const timelineDurationSec = useMemo(
+    () => timelineSlots.reduce((acc, entry) => acc + entry.durationSec, 0),
+    [timelineSlots]
+  );
 
   const segmentBoundaries = useMemo(() => {
-    const totalWeight = timelineSlots.reduce((acc, entry) => acc + entry.weight, 0);
-    let accWeight = 0;
+    const totalDuration = timelineDurationSec;
+    let accDuration = 0;
     return timelineSlots.map((entry) => {
-      const start = totalWeight > 0 ? accWeight / totalWeight : 0;
-      accWeight += entry.weight;
-      const end = totalWeight > 0 ? accWeight / totalWeight : 0;
+      const start = totalDuration > 0 ? accDuration / totalDuration : 0;
+      accDuration += entry.durationSec;
+      const end = totalDuration > 0 ? accDuration / totalDuration : 0;
       return { start, end };
     });
-  }, [timelineSlots]);
+  }, [timelineSlots, timelineDurationSec]);
 
   const activeTimelineSlot = useMemo(() => {
     if (!(playing === "timeline" && timelineProgress != null)) return null;
@@ -749,10 +762,8 @@ export default function SoundWavesPresentationMockup() {
 
     const ctx = await ensureSynthNode();
     const g = masterGainRef.current;
-    const timelineLengthMs = TIMELINE_TOTAL_SECONDS * 1000;
-    const totalWeight = timelineSlots.reduce((acc, entry) => acc + entry.weight, 0);
-
-    const slotDurationsMs = timelineSlots.map((entry) => (totalWeight > 0 ? (entry.weight / totalWeight) * timelineLengthMs : 0));
+    const timelineLengthMs = Math.max(timelineDurationSec * 1000, 1);
+    const slotDurationsMs = timelineSlots.map((entry) => entry.durationSec * 1000);
     const slotParams = timelineSlots.map((entry) =>
       entry.slot.kind === "wave"
         ? {
@@ -800,7 +811,7 @@ export default function SoundWavesPresentationMockup() {
     stopTimerRef.current = window.setTimeout(() => {
       stopPlayback();
     }, timelineLengthMs);
-  }, [customModes, ensureSynthNode, postParamsNow, timelineSlots, stopPlayback]);
+  }, [customModes, ensureSynthNode, postParamsNow, timelineSlots, timelineDurationSec, stopPlayback]);
 
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
@@ -929,23 +940,22 @@ export default function SoundWavesPresentationMockup() {
   }
 
   function clearTimeline() {
-    setTimelineSlots((prev) => prev.map((entry) => ({ ...entry, slot: { kind: "empty" }, weight: 1 })));
+    setTimelineSlots((prev) =>
+      prev.map((entry) => ({ ...entry, slot: { kind: "empty" }, durationSec: DEFAULT_SLOT_SECONDS }))
+    );
   }
 
-  function updateSlotWeight(i: number, weight: number) {
-    setTimelineSlots((prev) => prev.map((entry, idx) => (idx === i ? { ...entry, weight } : entry)));
+  function updateSlotDuration(i: number, durationSec: number) {
+    setTimelineSlots((prev) => prev.map((entry, idx) => (idx === i ? { ...entry, durationSec } : entry)));
   }
 
-  function insertSlotBetween(i: number) {
+  function insertSlotAfter(i: number) {
     setTimelineSlots((prev) => {
       if (prev.length >= MAX_TIMELINE_NOTES) return prev;
-      const before = prev[i];
-      const after = prev[i + 1];
       const nextId = nextTimelineIdRef.current;
       nextTimelineIdRef.current += 1;
-      const newWeight = clamp(((before?.weight ?? 1) + (after?.weight ?? 1)) / 2, MIN_SLOT_WEIGHT, MAX_SLOT_WEIGHT);
       const next = [...prev];
-      next.splice(i + 1, 0, { id: nextId, slot: { kind: "empty" }, weight: newWeight });
+      next.splice(i + 1, 0, { id: nextId, slot: { kind: "empty" }, durationSec: DEFAULT_SLOT_SECONDS });
       return next;
     });
   }
@@ -957,6 +967,31 @@ export default function SoundWavesPresentationMockup() {
       next.splice(i, 1);
       return next;
     });
+  }
+
+  function beginSlotResize(e: ReactPointerEvent<HTMLButtonElement>, index: number) {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    resizingSlotRef.current = {
+      index,
+      startX: e.clientX,
+      startDurationSec: timelineSlots[index].durationSec,
+    };
+  }
+
+  function continueSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+    const state = resizingSlotRef.current;
+    if (!state) return;
+    const deltaSeconds = (e.clientX - state.startX) / 120;
+    const nextDuration = clamp(state.startDurationSec + deltaSeconds, MIN_SLOT_SECONDS, MAX_SLOT_SECONDS);
+    updateSlotDuration(state.index, nextDuration);
+  }
+
+  function endSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+    if (resizingSlotRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      resizingSlotRef.current = null;
+    }
   }
 
   function openCustomEditor() {
@@ -1290,7 +1325,7 @@ export default function SoundWavesPresentationMockup() {
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
                   <div className="text-xs uppercase tracking-wider text-slate-500">3) Produce</div>
-                  <div className="text-lg font-semibold">10-second Timeline</div>
+                  <div className="text-lg font-semibold">{formatSeconds(timelineDurationSec)} Timeline</div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1337,8 +1372,8 @@ export default function SoundWavesPresentationMockup() {
                   <div className="flex gap-3 min-h-0 overflow-x-auto pb-2">
                     {timelineSlots.map((entry, i) => {
                       const label = timeLabelForSlot(
-                        segmentBoundaries[i].start * TIMELINE_TOTAL_SECONDS,
-                        segmentBoundaries[i].end * TIMELINE_TOTAL_SECONDS
+                        segmentBoundaries[i].start * timelineDurationSec,
+                        segmentBoundaries[i].end * timelineDurationSec
                       );
                       const waveSlot = entry.slot.kind === "wave" ? entry.slot : undefined;
                       const filled = waveSlot != null;
@@ -1367,9 +1402,17 @@ export default function SoundWavesPresentationMockup() {
                                 (isActive ? " ring-2 ring-blue-200 border-blue-400 bg-blue-50 shadow-lg" : "")
                               }
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="text-xs uppercase tracking-wider text-slate-500">Slot {i + 1}</div>
-                                <div className="text-xs text-slate-500 tabular-nums">{label}</div>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs text-slate-500 tabular-nums">{formatSeconds(entry.durationSec)} • {label}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeSlot(i)}
+                                  disabled={timelineSlots.length <= MIN_TIMELINE_NOTES}
+                                  className="h-6 w-6 rounded-full border bg-white text-xs text-slate-500 hover:bg-slate-50 disabled:text-slate-300"
+                                  title="Delete slot"
+                                >
+                                  X
+                                </button>
                               </div>
                               <div className="mt-2 rounded-xl bg-white border flex-1 min-h-0 overflow-hidden">
                                 {filled ? (
@@ -1382,18 +1425,15 @@ export default function SoundWavesPresentationMockup() {
                                 )}
                               </div>
                               <div className="mt-2 text-xs text-slate-600 truncate">{waveSlot?.label ?? "—"}</div>
-                              <div className="mt-2">
-                                <div className="text-[11px] text-slate-500 mb-1">Length</div>
-                                <input
-                                  type="range"
-                                  min={MIN_SLOT_WEIGHT}
-                                  max={MAX_SLOT_WEIGHT}
-                                  step={0.1}
-                                  value={entry.weight}
-                                  onChange={(e) => updateSlotWeight(i, Number(e.target.value))}
-                                  className="w-full"
-                                />
-                              </div>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => beginSlotResize(e, i)}
+                                onPointerMove={continueSlotResize}
+                                onPointerUp={endSlotResize}
+                                onPointerCancel={endSlotResize}
+                                className="mt-2 h-2 w-full rounded-full bg-slate-200 cursor-col-resize"
+                                title="Drag to resize note length"
+                              />
                             </div>
                             <div className="mt-2 flex gap-2">
                               <button
@@ -1402,26 +1442,17 @@ export default function SoundWavesPresentationMockup() {
                               >
                                 Add here
                               </button>
-                              <button
-                                onClick={() => removeSlot(i)}
-                                disabled={timelineSlots.length <= MIN_TIMELINE_NOTES}
-                                className="rounded-xl border bg-white px-3 py-2 text-sm hover:bg-slate-50 disabled:text-slate-300"
-                              >
-                                −
-                              </button>
                             </div>
                           </div>
-                          {i < timelineSlots.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={() => insertSlotBetween(i)}
-                              disabled={timelineSlots.length >= MAX_TIMELINE_NOTES}
-                              className="h-10 w-10 rounded-full border bg-white text-lg text-slate-700 hover:bg-slate-50 disabled:text-slate-300"
-                              title="Add note slot between"
-                            >
-                              +
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => insertSlotAfter(i)}
+                            disabled={timelineSlots.length >= MAX_TIMELINE_NOTES}
+                            className="h-10 w-10 rounded-full border bg-white text-lg text-slate-700 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-300"
+                            title={i === timelineSlots.length - 1 ? "Add note slot after" : "Add note slot between"}
+                          >
+                            +
+                          </button>
                         </div>
                       );
                     })}
@@ -1430,7 +1461,7 @@ export default function SoundWavesPresentationMockup() {
 
 
                 <div className="mt-4 text-xs text-slate-500">
-                  Notes are resizable and always total {TIMELINE_TOTAL_SECONDS} seconds. Use the + buttons to insert between notes.
+                  Notes are stretchable from {MIN_SLOT_SECONDS}s to {MAX_SLOT_SECONDS}s. Use + to add slots (including after the last one).
                 </div>
               </div>
             </div>
