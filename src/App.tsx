@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 /**
  * Sound Waves Presentation Mockup
@@ -175,6 +175,19 @@ type Slot =
       label: string;
     };
 
+type TimelineSlot = {
+  id: number;
+  slot: Slot;
+  durationSec: number;
+};
+
+const MIN_TIMELINE_NOTES = 2;
+const DEFAULT_TIMELINE_NOTES = 4;
+const MAX_TIMELINE_NOTES = 15;
+const MIN_SLOT_SECONDS = 0.5;
+const MAX_SLOT_SECONDS = 2;
+const DEFAULT_SLOT_SECONDS = 1.5;
+
 const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
   { type: "sine", name: "Sine", subtitle: "smooth" },
   { type: "triangle", name: "Triangle", subtitle: "linear ramps" },
@@ -189,10 +202,12 @@ function formatHz(x: number) {
   return `${Math.round(x)} Hz`;
 }
 
-function timeLabelForSlot(i: number) {
-  const start = i * 2;
-  const end = start + 2;
-  return `${start}–${end}s`;
+function timeLabelForSlot(start: number, end: number) {
+  return `${start.toFixed(1)}–${end.toFixed(1)}s`;
+}
+
+function formatSeconds(seconds: number) {
+  return `${seconds.toFixed(1)}s`;
 }
 
 type BrowserWindowWithWebkitAudio = Window & {
@@ -309,6 +324,7 @@ export default function SoundWavesPresentationMockup() {
   const timelineRafRef = useRef<number | null>(null);
   const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
+  const resizingSlotRef = useRef<{ index: number; startX: number; startDurationSec: number } | null>(null);
 
   const [playing, setPlaying] = useState<null | "base" | "modified" | "inspectorSample" | "timeline" | "customDraft" | "tilePreview">(null);
   const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
@@ -688,12 +704,38 @@ export default function SoundWavesPresentationMockup() {
     [customModes, ensureSynthNode, freqHz, playing, playingTileType, postParamsNow, stopPlayback]
   );
 
-  const [slots, setSlots] = useState<Slot[]>([...Array(5)].map(() => ({ kind: "empty" })));
-  const hasTimelineContent = useMemo(() => slots.some((slot) => slot.kind === "wave"), [slots]);
-  const activeTimelineSlot =
-    playing === "timeline" && timelineProgress != null ? Math.min(4, Math.floor(timelineProgress * 5)) : null;
-  const slotProgressWithinActive =
-    playing === "timeline" && timelineProgress != null ? (timelineProgress * 5) % 1 : 0;
+  const nextTimelineIdRef = useRef(DEFAULT_TIMELINE_NOTES + 1);
+  const [timelineSlots, setTimelineSlots] = useState<TimelineSlot[]>(
+    [...Array(DEFAULT_TIMELINE_NOTES)].map((_, index) => ({
+      id: index + 1,
+      slot: { kind: "empty" },
+      durationSec: DEFAULT_SLOT_SECONDS,
+    }))
+  );
+  const hasTimelineContent = useMemo(() => timelineSlots.some((entry) => entry.slot.kind === "wave"), [timelineSlots]);
+  const timelineDurationSec = useMemo(
+    () => timelineSlots.reduce((acc, entry) => acc + entry.durationSec, 0),
+    [timelineSlots]
+  );
+
+  const segmentBoundaries = useMemo(() => {
+    const totalDuration = timelineDurationSec;
+    let accDuration = 0;
+    return timelineSlots.map((entry) => {
+      const start = totalDuration > 0 ? accDuration / totalDuration : 0;
+      accDuration += entry.durationSec;
+      const end = totalDuration > 0 ? accDuration / totalDuration : 0;
+      return { start, end };
+    });
+  }, [timelineSlots, timelineDurationSec]);
+
+  const activeTimelineSlot = useMemo(() => {
+    if (!(playing === "timeline" && timelineProgress != null)) return null;
+    const progress = clamp(timelineProgress, 0, 0.999999);
+    const index = segmentBoundaries.findIndex((segment) => progress >= segment.start && progress < segment.end);
+    return index >= 0 ? index : timelineSlots.length - 1;
+  }, [playing, timelineProgress, segmentBoundaries, timelineSlots.length]);
+
   const timelineProgressPct = (timelineProgress ?? 0) * 100;
 
   useEffect(() => {
@@ -720,12 +762,16 @@ export default function SoundWavesPresentationMockup() {
 
     const ctx = await ensureSynthNode();
     const g = masterGainRef.current;
-    const timelineLengthMs = 10_000;
-    const slotLengthMs = 2_000;
-
-    const slotParams = slots.map((slot) =>
-      slot.kind === "wave"
-        ? { freqHz: slot.freqHz, amp: slot.amp, waveType: slot.type, customModes: slot.customModes ?? customModes }
+    const timelineLengthMs = Math.max(timelineDurationSec * 1000, 1);
+    const slotDurationsMs = timelineSlots.map((entry) => entry.durationSec * 1000);
+    const slotParams = timelineSlots.map((entry) =>
+      entry.slot.kind === "wave"
+        ? {
+            freqHz: entry.slot.freqHz,
+            amp: entry.slot.amp,
+            waveType: entry.slot.type,
+            customModes: entry.slot.customModes ?? customModes,
+          }
         : { freqHz: 220, amp: 0, waveType: "sine" as WaveType, customModes }
     );
 
@@ -754,16 +800,18 @@ export default function SoundWavesPresentationMockup() {
 
     timelineRafRef.current = window.requestAnimationFrame(tick);
 
-    timelineTimersRef.current = slotParams.slice(1).map((params, idx) =>
-      window.setTimeout(() => {
+    let elapsedMs = 0;
+    timelineTimersRef.current = slotParams.slice(1).map((params, idx) => {
+      elapsedMs += slotDurationsMs[idx];
+      return window.setTimeout(() => {
         postParamsNow(params);
-      }, slotLengthMs * (idx + 1))
-    );
+      }, elapsedMs);
+    });
 
     stopTimerRef.current = window.setTimeout(() => {
       stopPlayback();
     }, timelineLengthMs);
-  }, [customModes, ensureSynthNode, postParamsNow, slots, stopPlayback]);
+  }, [customModes, ensureSynthNode, postParamsNow, timelineSlots, timelineDurationSec, stopPlayback]);
 
   // While playing, reflect slider and wave-shape changes immediately.
   useEffect(() => {
@@ -871,25 +919,79 @@ export default function SoundWavesPresentationMockup() {
   );
 
   function placeInSlot(i: number) {
-    setSlots((prev) => {
+    setTimelineSlots((prev) => {
       const next = [...prev];
       next[i] = {
-        kind: "wave",
-        type: waveType,
-        amp,
-        freqHz,
-        customModes: waveType === "custom" ? [...customModes] : undefined,
-        label:
-          waveType === "custom"
-            ? `Custom mix · ${formatHz(freqHz)}`
-            : `${WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · ${formatHz(freqHz)}`,
+        ...next[i],
+        slot: {
+          kind: "wave",
+          type: waveType,
+          amp,
+          freqHz,
+          customModes: waveType === "custom" ? [...customModes] : undefined,
+          label:
+            waveType === "custom"
+              ? `Custom mix · ${formatHz(freqHz)}`
+              : `${WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · ${formatHz(freqHz)}`,
+        },
       };
       return next;
     });
   }
 
   function clearTimeline() {
-    setSlots([...Array(5)].map(() => ({ kind: "empty" })));
+    setTimelineSlots((prev) =>
+      prev.map((entry) => ({ ...entry, slot: { kind: "empty" }, durationSec: DEFAULT_SLOT_SECONDS }))
+    );
+  }
+
+  function updateSlotDuration(i: number, durationSec: number) {
+    setTimelineSlots((prev) => prev.map((entry, idx) => (idx === i ? { ...entry, durationSec } : entry)));
+  }
+
+  function insertSlotAfter(i: number) {
+    setTimelineSlots((prev) => {
+      if (prev.length >= MAX_TIMELINE_NOTES) return prev;
+      const nextId = nextTimelineIdRef.current;
+      nextTimelineIdRef.current += 1;
+      const next = [...prev];
+      next.splice(i + 1, 0, { id: nextId, slot: { kind: "empty" }, durationSec: DEFAULT_SLOT_SECONDS });
+      return next;
+    });
+  }
+
+  function removeSlot(i: number) {
+    setTimelineSlots((prev) => {
+      if (prev.length <= MIN_TIMELINE_NOTES) return prev;
+      const next = [...prev];
+      next.splice(i, 1);
+      return next;
+    });
+  }
+
+  function beginSlotResize(e: ReactPointerEvent<HTMLButtonElement>, index: number) {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    resizingSlotRef.current = {
+      index,
+      startX: e.clientX,
+      startDurationSec: timelineSlots[index].durationSec,
+    };
+  }
+
+  function continueSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+    const state = resizingSlotRef.current;
+    if (!state) return;
+    const deltaSeconds = (e.clientX - state.startX) / 120;
+    const nextDuration = clamp(state.startDurationSec + deltaSeconds, MIN_SLOT_SECONDS, MAX_SLOT_SECONDS);
+    updateSlotDuration(state.index, nextDuration);
+  }
+
+  function endSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+    if (resizingSlotRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      resizingSlotRef.current = null;
+    }
   }
 
   function openCustomEditor() {
@@ -939,9 +1041,10 @@ export default function SoundWavesPresentationMockup() {
       <AppBanner />
 
       {/* Main */}
-      <div className="h-full w-full flex flex-1 min-h-0">
-        {/* Left column (1/3) */}
-        <div className="w-1/3 min-w-[360px] border-r bg-white p-5">
+      <div className="h-full w-full flex flex-1 min-h-0 flex-col gap-5 p-5 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50">
+        <div className="min-h-0 flex-[2] flex gap-5">
+          {/* Left column (1/3) */}
+          <div className="w-1/3 min-w-[360px] rounded-3xl border bg-white p-5 overflow-auto">
           <div className="flex items-baseline justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500">▶ 1) Select wave</div>
@@ -1036,12 +1139,10 @@ export default function SoundWavesPresentationMockup() {
               Pick a waveform on the left, then use amplitude and frequency on the right to show how it changes.
             </div>
           </div>
-        </div>
+          </div>
 
-        {/* Right column (2/3) */}
-        <div className="w-2/3 flex flex-col gap-5 p-5 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50">
-          {/* MODIFY (2/3 height) */}
-          <div className="flex-[2]">
+          {/* Right column (2/3) */}
+          <div className="w-2/3 min-h-0">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <BannerHeader
                 left={
@@ -1216,14 +1317,15 @@ export default function SoundWavesPresentationMockup() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* PRODUCE (1/3 height) */}
-          <div className="flex-[1]">
-            <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
+        {/* PRODUCE (full-width bottom panel) */}
+        <div className="min-h-0 flex-1">
+          <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
                   <div className="text-xs uppercase tracking-wider text-slate-500">3) Produce</div>
-                  <div className="text-lg font-semibold">10-second Timeline</div>
+                  <div className="text-lg font-semibold">{formatSeconds(timelineDurationSec)} Timeline</div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1259,85 +1361,97 @@ export default function SoundWavesPresentationMockup() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-5 gap-3 min-h-0">
-                    {slots.map((slot, i) => {
-                      const label = timeLabelForSlot(i);
-                      const filled = slot.kind === "wave";
+                  <div className="flex items-center gap-2 mb-3 text-xs text-slate-500">
+                    <span>{timelineSlots.length} notes</span>
+                    <span>•</span>
+                    <span>min {MIN_TIMELINE_NOTES}</span>
+                    <span>•</span>
+                    <span>max {MAX_TIMELINE_NOTES}</span>
+                  </div>
+
+                  <div className="flex gap-3 min-h-0 overflow-x-auto pb-2">
+                    {timelineSlots.map((entry, i) => {
+                      const label = timeLabelForSlot(
+                        segmentBoundaries[i].start * timelineDurationSec,
+                        segmentBoundaries[i].end * timelineDurationSec
+                      );
+                      const waveSlot = entry.slot.kind === "wave" ? entry.slot : undefined;
+                      const filled = waveSlot != null;
                       const isActive = activeTimelineSlot === i;
                       const miniPath = filled
                         ? makeWavePath({
-                            type: slot.type,
-                            amp: slot.amp,
-                            freqHz: slot.freqHz,
+                            type: waveSlot!.type,
+                            amp: waveSlot!.amp,
+                            freqHz: waveSlot!.freqHz,
                             width: 220,
                             height: 80,
                             seconds: 0.02,
                             samples: 120,
                             yPad: 10,
-                            customModes: slot.customModes ?? customModes,
+                            customModes: waveSlot!.customModes ?? customModes,
                           })
                         : null;
 
                       return (
-                        <div key={i} className="flex flex-col min-h-0">
-                          <div
-                            className={
-                              "relative flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-colors duration-200 " +
-                              (filled ? "border-slate-300" : "border-dashed border-slate-300") +
-                              (isActive
-                                ? " ring-2 ring-blue-200 border-blue-400 bg-blue-50 shadow-lg"
-                                : "")
-                            }
-                            style={{
-                              transform: isActive ? "scale(1.15)" : "scale(1)",
-                              transformOrigin: "center",
-                              transition: "transform 180ms ease, background-color 180ms ease, border-color 180ms ease",
-                              willChange: "transform",
-                            }}
-                          >
-                            {isActive && (
-                              <div className="absolute top-2 right-2 rounded-full bg-blue-600 text-white text-[10px] px-2 py-0.5 animate-pulse">
-                                Playing
+                        <div key={entry.id} className="flex items-center gap-3 min-w-[280px]">
+                          <div className="flex flex-col min-h-0 flex-1">
+                            <div
+                              className={
+                                "relative flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-colors duration-200 " +
+                                (filled ? "border-slate-300" : "border-dashed border-slate-300") +
+                                (isActive ? " ring-2 ring-blue-200 border-blue-400 bg-blue-50 shadow-lg" : "")
+                              }
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs text-slate-500 tabular-nums">{formatSeconds(entry.durationSec)} • {label}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeSlot(i)}
+                                  disabled={timelineSlots.length <= MIN_TIMELINE_NOTES}
+                                  className="h-6 w-6 rounded-full border bg-white text-xs text-slate-500 hover:bg-slate-50 disabled:text-slate-300"
+                                  title="Delete slot"
+                                >
+                                  X
+                                </button>
                               </div>
-                            )}
-
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs uppercase tracking-wider text-slate-500">Slot {i + 1}</div>
-                              <div className="text-xs text-slate-500 tabular-nums">{label}</div>
-                            </div>
-
-                            <div className="mt-2 rounded-xl bg-white border flex-1 min-h-0 overflow-hidden">
-                              {filled ? (
-                                <svg viewBox="0 0 220 80" className="w-full h-full block" preserveAspectRatio="none">
-                                  <line x1="0" y1="40" x2="220" y2="40" stroke="rgb(226,232,240)" strokeWidth="2" />
-                                  <path d={miniPath!} fill="none" stroke="rgb(15,23,42)" strokeWidth="3" />
-                                </svg>
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-                                  empty
-                                </div>
-                              )}
-                            </div>
-
-                            {isActive && (
-                              <div className="mt-2 h-1 w-full rounded-full bg-blue-100 overflow-hidden" aria-hidden="true">
-                                <div
-                                  className="h-full bg-blue-500 transition-[width] duration-100"
-                                  style={{ width: `${slotProgressWithinActive * 100}%` }}
-                                />
+                              <div className="mt-2 rounded-xl bg-white border flex-1 min-h-0 overflow-hidden">
+                                {filled ? (
+                                  <svg viewBox="0 0 220 80" className="w-full h-full block" preserveAspectRatio="none">
+                                    <line x1="0" y1="40" x2="220" y2="40" stroke="rgb(226,232,240)" strokeWidth="2" />
+                                    <path d={miniPath!} fill="none" stroke="rgb(15,23,42)" strokeWidth="3" />
+                                  </svg>
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">empty</div>
+                                )}
                               </div>
-                            )}
-
-                            <div className="mt-2 text-xs text-slate-600 truncate">
-                              {filled ? slot.label : "—"}
+                              <div className="mt-2 text-xs text-slate-600 truncate">{waveSlot?.label ?? "—"}</div>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => beginSlotResize(e, i)}
+                                onPointerMove={continueSlotResize}
+                                onPointerUp={endSlotResize}
+                                onPointerCancel={endSlotResize}
+                                className="mt-2 h-2 w-full rounded-full bg-slate-200 cursor-col-resize"
+                                title="Drag to resize note length"
+                              />
+                            </div>
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                onClick={() => placeInSlot(i)}
+                                className="flex-1 rounded-xl bg-slate-900 text-white px-3 py-2 text-sm hover:bg-slate-800"
+                              >
+                                Add here
+                              </button>
                             </div>
                           </div>
-
                           <button
-                            onClick={() => placeInSlot(i)}
-                            className="mt-2 rounded-xl bg-slate-900 text-white px-3 py-2 text-sm hover:bg-slate-800"
+                            type="button"
+                            onClick={() => insertSlotAfter(i)}
+                            disabled={timelineSlots.length >= MAX_TIMELINE_NOTES}
+                            className="h-10 w-10 rounded-full border bg-white text-lg text-slate-700 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-300"
+                            title={i === timelineSlots.length - 1 ? "Add note slot after" : "Add note slot between"}
                           >
-                            Add here
+                            +
                           </button>
                         </div>
                       );
@@ -1347,15 +1461,12 @@ export default function SoundWavesPresentationMockup() {
 
 
                 <div className="mt-4 text-xs text-slate-500">
-                  Each slot is a 2-second region (total 10 seconds). “Add here” copies the current modified wave (type, amplitude,
-                  frequency) into that slot.
+                  Notes are stretchable from {MIN_SLOT_SECONDS}s to {MAX_SLOT_SECONDS}s. Use + to add slots (including after the last one).
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
       {customEditorOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-h-[96vh] overflow-auto rounded-3xl border bg-white shadow-2xl" style={{ maxWidth: "min(96vw, 1400px)" }}>
