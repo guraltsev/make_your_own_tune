@@ -1071,7 +1071,7 @@ export default function SoundWavesPresentationMockup() {
       <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50" style={{ flex: "85 1 0%" }}>
         <div className="min-h-0 flex gap-4" style={{ flex: "11 1 0%" }}>
           {/* Left column (1/3) */}
-          <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 overflow-hidden flex flex-col">
+          <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 pb-5 overflow-hidden flex flex-col">
           <div className="flex items-baseline justify-between">
             <div>
               <div className="flex items-baseline gap-2">
@@ -1082,9 +1082,10 @@ export default function SoundWavesPresentationMockup() {
             <div className="text-xs text-slate-500">6 tiles</div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid flex-1 min-h-0 grid-cols-2 auto-rows-fr gap-3 pb-1">
             {WAVE_TILES.map((w) => {
               const selected = w.type === waveType;
+              const selectTile = () => setWaveType(w.type);
               const tilePath = makeWavePath({
                 type: w.type,
                 amp: 1,
@@ -1099,8 +1100,17 @@ export default function SoundWavesPresentationMockup() {
               return (
                 <div
                   key={w.type}
+                  onClick={selectTile}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      selectTile();
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                   className={
-                    "rounded-2xl border px-3 py-2.5 text-left shadow-sm transition " +
+                    "h-full min-h-0 rounded-2xl border px-3 py-2.5 text-left shadow-sm transition cursor-pointer flex flex-col " +
                     (selected
                       ? "border-slate-900 ring-2 ring-slate-900/10 bg-slate-50"
                       : "border-slate-200 hover:border-slate-300 bg-white")
@@ -1112,8 +1122,11 @@ export default function SoundWavesPresentationMockup() {
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => playWaveTilePreview(w.type)}
-                        className="h-6 w-6 rounded-full border border-slate-200 text-slate-500 text-[10px] leading-none transition hover:bg-slate-100 hover:text-slate-700"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          playWaveTilePreview(w.type);
+                        }}
+                        className="h-7 w-7 rounded-full border border-slate-200 text-slate-500 text-xs leading-none transition hover:bg-slate-100 hover:text-slate-700"
                         aria-label={
                           playing === "tilePreview" && playingTileType === w.type
                             ? `Stop ${w.name} waveform preview`
@@ -1128,43 +1141,32 @@ export default function SoundWavesPresentationMockup() {
                         {playing === "tilePreview" && playingTileType === w.type ? "■" : "▶"}
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => (w.type === "custom" ? openCustomEditor() : setWaveType(w.type))}
-                        className={
-                          "text-[10px] px-2 py-1 rounded-full border transition " +
-                          (selected
-                            ? "border-slate-900 text-slate-900 bg-white"
-                            : "border-slate-200 text-slate-500 hover:bg-slate-100")
-                        }
-                      >
-                        {w.type === "custom" ? "Edit" : selected ? "Selected" : "Pick"}
-                      </button>
+                      {w.type === "custom" && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openCustomEditor();
+                          }}
+                          className="text-[10px] px-2 py-1 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 transition"
+                        >
+                          Edit
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => (w.type === "custom" ? openCustomEditor() : setWaveType(w.type))}
-                    className="mt-2 w-full rounded-xl bg-white border overflow-hidden"
-                    aria-label={`Select ${w.name} waveform`}
-                  >
-                    <svg width="100%" height="90" viewBox="0 0 160 90" className="block">
+                  <div className="mt-2 w-full flex-1 min-h-0 rounded-xl bg-white border overflow-hidden" aria-label={`Select ${w.name} waveform`}>
+                    <svg width="100%" height="100%" viewBox="0 0 160 90" className="block">
                       <path d={tilePath} fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-800" />
                       <line x1="0" y1="45" x2="160" y2="45" className="stroke-slate-200" strokeWidth="1" />
                     </svg>
-                  </button>
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-5 rounded-2xl border bg-slate-50 p-4">
-            <div className="text-xs uppercase tracking-wider text-slate-500">Tip</div>
-            <div className="text-sm mt-1">
-              Pick a waveform on the left, then use amplitude and frequency on the right to show how it changes.
-            </div>
-          </div>
           </div>
 
           {/* Right column (2/3) */}
