@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 /**
  * Sound Waves Presentation Mockup
@@ -198,6 +198,39 @@ type BrowserWindowWithWebkitAudio = Window & {
   AudioContext?: typeof AudioContext;
   webkitAudioContext?: typeof AudioContext;
 };
+
+function BannerHeader({
+  left,
+  right,
+}: {
+  left: ReactNode;
+  right?: ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden border-b">
+      <div className="grid px-6 py-4">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none"
+          style={{ gridArea: "1 / 1", background: "linear-gradient(to right, rgb(248 250 252), rgb(239 246 255), rgb(241 245 249))" }}
+        />
+
+        <div aria-hidden="true" className="pointer-events-none relative" style={{ gridArea: "1 / 1" }}>
+          <div className="absolute -top-8 left-10 h-16 w-16 rounded-full" style={{ background: "rgba(59,130,246,0.16)" }} />
+          <div className="absolute top-2 left-44 h-8 w-8 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
+          <div className="absolute bottom-0 left-1/3 h-10 w-10 rounded-full" style={{ background: "rgba(16,185,129,0.14)" }} />
+          <div className="absolute -top-10 right-24 h-16 w-16 rounded-full" style={{ background: "rgba(99,102,241,0.12)" }} />
+          <div className="absolute bottom-1 right-8 h-7 w-7 rounded-full" style={{ background: "rgba(59,130,246,0.2)" }} />
+        </div>
+
+        <div className="flex items-center justify-between" style={{ gridArea: "1 / 1" }}>
+          {left}
+          {right}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ----------------------------
 // Main component
@@ -957,28 +990,23 @@ export default function SoundWavesPresentationMockup() {
           {/* MODIFY (2/3 height) */}
           <div className="flex-[2]">
             <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
-              <div className="relative overflow-hidden px-6 py-4 border-b bg-gradient-to-r from-slate-50 via-blue-50 to-slate-100 flex items-center justify-between">
-                <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-                  <div className="absolute -top-8 left-10 h-16 w-16 rounded-full" style={{ background: "rgba(59,130,246,0.16)" }} />
-                  <div className="absolute top-2 left-44 h-8 w-8 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
-                  <div className="absolute bottom-0 left-1/3 h-10 w-10 rounded-full" style={{ background: "rgba(16,185,129,0.14)" }} />
-                  <div className="absolute -top-10 right-24 h-16 w-16 rounded-full" style={{ background: "rgba(99,102,241,0.12)" }} />
-                  <div className="absolute bottom-1 right-8 h-7 w-7 rounded-full" style={{ background: "rgba(59,130,246,0.2)" }} />
-                </div>
-
-                <div className="relative z-10">
-                  <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
-                  <div className="text-lg font-semibold">Wave Inspector</div>
-                </div>
-
-                <div className="relative z-10 flex items-center gap-2">
-                  <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
-                  <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
-                  <div className="text-xs text-slate-600">Modified</div>
-                  <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
-                  <div className="text-xs text-slate-500">Base</div>
-                </div>
-              </div>
+              <BannerHeader
+                left={
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
+                    <div className="text-lg font-semibold">Wave Inspector</div>
+                  </div>
+                }
+                right={
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
+                    <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
+                    <div className="text-xs text-slate-600">Modified</div>
+                    <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
+                    <div className="text-xs text-slate-500">Base</div>
+                  </div>
+                }
+              />
 
               <div className="flex-1 flex min-h-0">
                 {/* Plot */}
