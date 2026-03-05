@@ -251,8 +251,8 @@ function BannerHeader({
 
 function AppBanner() {
   return (
-    <div className="overflow-hidden border-b">
-      <div className="relative px-6 py-6 flex items-center justify-center" style={{ minHeight: "150px" }}>
+    <div className="h-full overflow-hidden border-b">
+      <div className="relative h-full px-6 py-4 flex items-center justify-center">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -1062,14 +1062,16 @@ export default function SoundWavesPresentationMockup() {
   }
 
   return (
-    <div className="h-screen w-screen bg-slate-50 text-slate-900 flex flex-col">
-      <AppBanner />
+    <div className="h-screen w-screen bg-slate-50 text-slate-900 flex flex-col overflow-hidden">
+      <div className="min-h-0" style={{ flex: "15 1 0%" }}>
+        <AppBanner />
+      </div>
 
       {/* Main */}
-      <div className="h-full w-full flex flex-1 min-h-0 flex-col gap-5 p-5 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50">
-        <div className="min-h-0 flex-[2] flex gap-5">
+      <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50" style={{ flex: "85 1 0%" }}>
+        <div className="min-h-0 flex gap-4" style={{ flex: "11 1 0%" }}>
           {/* Left column (1/3) */}
-          <div className="w-1/3 min-w-[360px] rounded-3xl border bg-white p-5 overflow-auto">
+          <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 overflow-hidden flex flex-col">
           <div className="flex items-baseline justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500">▶ 1) Select wave</div>
@@ -1078,7 +1080,7 @@ export default function SoundWavesPresentationMockup() {
             <div className="text-xs text-slate-500">6 tiles</div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             {WAVE_TILES.map((w) => {
               const selected = w.type === waveType;
               const tilePath = makeWavePath({
@@ -1096,7 +1098,7 @@ export default function SoundWavesPresentationMockup() {
                 <div
                   key={w.type}
                   className={
-                    "rounded-2xl border p-3 text-left shadow-sm transition " +
+                    "rounded-2xl border p-2 text-left shadow-sm transition " +
                     (selected
                       ? "border-slate-900 ring-2 ring-slate-900/10 bg-slate-50"
                       : "border-slate-200 hover:border-slate-300 bg-white")
@@ -1257,7 +1259,7 @@ export default function SoundWavesPresentationMockup() {
                 </div>
 
                 {/* Sliders */}
-                <div className="w-[320px] border-l p-6 bg-white">
+          <div className="w-[320px] border-l p-4 bg-white overflow-hidden">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold">Controls</div>
                     <button
@@ -1345,7 +1347,7 @@ export default function SoundWavesPresentationMockup() {
         </div>
 
         {/* PRODUCE (full-width bottom panel) */}
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0" style={{ flex: "6 1 0%" }}>
           <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
@@ -1394,7 +1396,7 @@ export default function SoundWavesPresentationMockup() {
                     <span>max {MAX_TIMELINE_NOTES}</span>
                   </div>
 
-                  <div className="flex gap-3 min-h-0 overflow-x-auto pb-2">
+                  <div className="flex gap-2 min-h-0 overflow-hidden pb-2">
                     {timelineSlots.map((entry, i) => {
                       const label = timeLabelForSlot(
                         segmentBoundaries[i].start * timelineDurationSec,
@@ -1420,8 +1422,8 @@ export default function SoundWavesPresentationMockup() {
                       return (
                         <div
                           key={entry.id}
-                          className="flex items-center gap-3 min-w-[220px]"
-                          style={{ flexGrow: entry.durationSec, flexBasis: `${entry.durationSec * 120}px` }}
+                          className="flex items-center gap-2 min-w-0"
+                          style={{ flexGrow: entry.durationSec, flexBasis: 0 }}
                         >
                           <div className="flex flex-col min-h-0 flex-1">
                             <div
