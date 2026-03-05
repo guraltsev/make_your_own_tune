@@ -324,12 +324,13 @@ export default function SoundWavesPresentationMockup() {
   const timelineRafRef = useRef<number | null>(null);
   const timelineStartRef = useRef<number | null>(null);
   const pendingParamsRef = useRef<{ freqHz: number; amp: number; waveType: WaveType; customModes: number[] } | null>(null);
-  const resizingSlotRef = useRef<{ index: number; startX: number; startDurationSec: number } | null>(null);
+  const resizingSlotRef = useRef<{ index: number; edge: "left" | "right"; startX: number; startDurationSec: number } | null>(null);
 
   const [playing, setPlaying] = useState<null | "base" | "modified" | "inspectorSample" | "timeline" | "customDraft" | "tilePreview">(null);
   const [playingTileType, setPlayingTileType] = useState<WaveType | null>(null);
   const [timelineProgress, setTimelineProgress] = useState<number | null>(null);
   const [inspectorAnimationProgressSec, setInspectorAnimationProgressSec] = useState(0);
+  const [resizingSlotIndex, setResizingSlotIndex] = useState<number | null>(null);
 
   const ensureAudioContext = useCallback(async () => {
     let ctx = audioCtxRef.current;
@@ -969,30 +970,54 @@ export default function SoundWavesPresentationMockup() {
     });
   }
 
-  function beginSlotResize(e: ReactPointerEvent<HTMLButtonElement>, index: number) {
+  function beginSlotResize(e: ReactPointerEvent<HTMLButtonElement>, index: number, edge: "left" | "right") {
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
     resizingSlotRef.current = {
       index,
+      edge,
       startX: e.clientX,
       startDurationSec: timelineSlots[index].durationSec,
     };
+    setResizingSlotIndex(index);
   }
 
-  function continueSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+  function continueSlotResize(clientX: number) {
     const state = resizingSlotRef.current;
     if (!state) return;
-    const deltaSeconds = (e.clientX - state.startX) / 120;
+    const direction = state.edge === "right" ? 1 : -1;
+    const deltaSeconds = ((clientX - state.startX) / 120) * direction;
     const nextDuration = clamp(state.startDurationSec + deltaSeconds, MIN_SLOT_SECONDS, MAX_SLOT_SECONDS);
     updateSlotDuration(state.index, nextDuration);
   }
 
-  function endSlotResize(e: ReactPointerEvent<HTMLButtonElement>) {
+  function endSlotResize() {
     if (resizingSlotRef.current) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
       resizingSlotRef.current = null;
+      setResizingSlotIndex(null);
     }
   }
+
+  useEffect(() => {
+    if (resizingSlotIndex == null) return;
+
+    function onPointerMove(e: PointerEvent) {
+      continueSlotResize(e.clientX);
+    }
+
+    function onPointerUp() {
+      endSlotResize();
+    }
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [resizingSlotIndex]);
 
   function openCustomEditor() {
     setCustomDraftModes([...customModes]);
@@ -1393,11 +1418,15 @@ export default function SoundWavesPresentationMockup() {
                         : null;
 
                       return (
-                        <div key={entry.id} className="flex items-center gap-3 min-w-[280px]">
+                        <div
+                          key={entry.id}
+                          className="flex items-center gap-3 min-w-[220px]"
+                          style={{ flexGrow: entry.durationSec, flexBasis: `${entry.durationSec * 120}px` }}
+                        >
                           <div className="flex flex-col min-h-0 flex-1">
                             <div
                               className={
-                                "relative flex-1 rounded-2xl border p-3 bg-slate-50 flex flex-col min-h-0 transition-colors duration-200 " +
+                                "relative flex-1 rounded-2xl border px-5 py-3 bg-slate-50 flex flex-col min-h-0 transition-colors duration-200 " +
                                 (filled ? "border-slate-300" : "border-dashed border-slate-300") +
                                 (isActive ? " ring-2 ring-blue-200 border-blue-400 bg-blue-50 shadow-lg" : "")
                               }
@@ -1424,16 +1453,27 @@ export default function SoundWavesPresentationMockup() {
                                   <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">empty</div>
                                 )}
                               </div>
-                              <div className="mt-2 text-xs text-slate-600 truncate">{waveSlot?.label ?? "—"}</div>
                               <button
                                 type="button"
-                                onPointerDown={(e) => beginSlotResize(e, i)}
-                                onPointerMove={continueSlotResize}
-                                onPointerUp={endSlotResize}
-                                onPointerCancel={endSlotResize}
-                                className="mt-2 h-2 w-full rounded-full bg-slate-200 cursor-col-resize"
-                                title="Drag to resize note length"
+                                onPointerDown={(e) => beginSlotResize(e, i, "left")}
+                                className={
+                                  "absolute inset-y-3 left-0 w-3 rounded-l-2xl cursor-col-resize transition " +
+                                  (resizingSlotIndex === i ? "bg-blue-200/80" : "hover:bg-slate-300/70")
+                                }
+                                title="Drag left edge to resize"
+                                aria-label="Resize note from left edge"
                               />
+                              <button
+                                type="button"
+                                onPointerDown={(e) => beginSlotResize(e, i, "right")}
+                                className={
+                                  "absolute inset-y-3 right-0 w-3 rounded-r-2xl cursor-col-resize transition " +
+                                  (resizingSlotIndex === i ? "bg-blue-200/80" : "hover:bg-slate-300/70")
+                                }
+                                title="Drag right edge to resize"
+                                aria-label="Resize note from right edge"
+                              />
+                              <div className="mt-2 text-xs text-slate-600 truncate">{waveSlot?.label ?? "—"}</div>
                             </div>
                             <div className="mt-2 flex gap-2">
                               <button
