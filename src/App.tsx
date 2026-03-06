@@ -253,35 +253,6 @@ function AppBanner() {
   return (
     <div className="h-full overflow-hidden border-b">
       <div className="relative h-full px-6 py-4 flex items-center justify-center">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "linear-gradient(135deg, rgb(30 58 138), rgb(34 255 136))",
-          }}
-        />
-
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            opacity: 0.9,
-            backgroundImage:
-              "radial-gradient(circle at 6% 22%, rgba(180, 35, 255, 0.62) 0 10px, rgba(255, 0, 210, 0.97) 11px 13px, transparent 14px)," +
-              "radial-gradient(circle at 24% 50%, rgba(195, 55, 255, 0.58) 0 8px, rgba(255, 0, 210, 0.95) 9px 10px, transparent 11px)," +
-              "radial-gradient(circle at 52% 36%, rgba(178, 45, 255, 0.56) 0 7px, rgba(255, 0, 210, 0.95) 8px 9px, transparent 10px)," +
-              "radial-gradient(circle at 70% 42%, rgba(165, 18, 245, 0.6) 0 9px, rgba(255, 0, 210, 0.96) 10px 11px, transparent 13px)," +
-              "radial-gradient(circle at 94% 24%, rgba(210, 88, 255, 0.56) 0 5px, rgba(255, 0, 210, 0.93) 6px 8px, transparent 9px)," +
-              "radial-gradient(circle at 16% 76%, rgba(180, 35, 255, 0.54) 0 12px, rgba(255, 0, 210, 0.95) 13px 14px, transparent 16px)," +
-              "radial-gradient(circle at 36% 70%, rgba(195, 55, 255, 0.52) 0 8px, rgba(255, 0, 210, 0.92) 9px 10px, transparent 11px)," +
-              "radial-gradient(circle at 60% 82%, rgba(165, 18, 245, 0.52) 0 7px, rgba(255, 0, 210, 0.92) 8px 9px, transparent 10px)," +
-              "radial-gradient(circle at 80% 66%, rgba(178, 45, 255, 0.52) 0 9px, rgba(255, 0, 210, 0.93) 10px 11px, transparent 13px)," +
-              "radial-gradient(circle at 92% 84%, rgba(195, 55, 255, 0.48) 0 8px, rgba(255, 0, 210, 0.9) 9px 10px, transparent 11px)," +
-              "radial-gradient(circle at 10% -20%, rgba(165, 18, 245, 0.42) 0 32px, rgba(255, 0, 210, 0.9) 33px 36px, transparent 37px)," +
-              "radial-gradient(circle at 88% 118%, rgba(180, 35, 255, 0.4) 0 30px, rgba(255, 0, 210, 0.88) 31px 34px, transparent 35px)",
-          }}
-        />
-
         <h1
           className="relative text-center"
           style={{
@@ -1062,13 +1033,66 @@ export default function SoundWavesPresentationMockup() {
   }
 
   return (
-    <div className="h-screen w-screen bg-slate-50 text-slate-900 flex flex-col overflow-hidden">
-      <div className="min-h-0" style={{ flex: "15 1 0%" }}>
-        <AppBanner />
-      </div>
+    <div className="relative h-screen w-screen bg-slate-50 text-slate-900 overflow-hidden">
+      <div
+        id="app-root-gradient-background"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "linear-gradient(135deg, rgb(30 58 138), rgb(34 255 136))",
+        }}
+      />
+      <div
+        id="app-root-bubbles-background"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          opacity: 1,
+          backgroundImage:
+            "radial-gradient(circle at 4% 12%, rgba(255, 0, 212, 0.95) 0 22px, rgba(189, 30, 255, 0.75) 23px 34px, transparent 35px)," +
+            "radial-gradient(circle at 12% 24%, rgba(255, 0, 196, 0.9) 0 16px, rgba(172, 24, 249, 0.72) 17px 26px, transparent 27px)," +
+            "radial-gradient(circle at 20% 16%, rgba(206, 52, 255, 0.88) 0 14px, rgba(255, 0, 210, 0.7) 15px 24px, transparent 25px)," +
+            "radial-gradient(circle at 30% 26%, rgba(255, 0, 210, 0.92) 0 20px, rgba(178, 24, 250, 0.72) 21px 31px, transparent 32px)," +
+            "radial-gradient(circle at 42% 14%, rgba(194, 46, 255, 0.86) 0 18px, rgba(255, 0, 190, 0.68) 19px 29px, transparent 30px)," +
+            "radial-gradient(circle at 54% 24%, rgba(255, 0, 210, 0.9) 0 24px, rgba(172, 28, 245, 0.7) 25px 36px, transparent 37px)," +
+            "radial-gradient(circle at 66% 16%, rgba(195, 45, 255, 0.88) 0 17px, rgba(255, 0, 192, 0.68) 18px 27px, transparent 28px)," +
+            "radial-gradient(circle at 78% 26%, rgba(255, 0, 212, 0.92) 0 19px, rgba(167, 22, 244, 0.7) 20px 30px, transparent 31px)," +
+            "radial-gradient(circle at 90% 12%, rgba(211, 68, 255, 0.86) 0 14px, rgba(255, 0, 210, 0.68) 15px 24px, transparent 25px)," +
+            "radial-gradient(circle at 96% 24%, rgba(255, 0, 198, 0.86) 0 16px, rgba(178, 34, 249, 0.68) 17px 26px, transparent 27px)," +
+            "radial-gradient(circle at 8% 54%, rgba(255, 0, 212, 0.88) 0 18px, rgba(165, 24, 240, 0.66) 19px 29px, transparent 30px)," +
+            "radial-gradient(circle at 18% 44%, rgba(199, 52, 255, 0.82) 0 12px, rgba(255, 0, 188, 0.62) 13px 21px, transparent 22px)," +
+            "radial-gradient(circle at 28% 58%, rgba(255, 0, 210, 0.88) 0 21px, rgba(172, 30, 246, 0.68) 22px 33px, transparent 34px)," +
+            "radial-gradient(circle at 40% 46%, rgba(189, 45, 255, 0.84) 0 15px, rgba(255, 0, 194, 0.64) 16px 24px, transparent 25px)," +
+            "radial-gradient(circle at 52% 56%, rgba(255, 0, 204, 0.88) 0 26px, rgba(172, 26, 246, 0.68) 27px 39px, transparent 40px)," +
+            "radial-gradient(circle at 64% 46%, rgba(198, 50, 255, 0.82) 0 13px, rgba(255, 0, 192, 0.62) 14px 22px, transparent 23px)," +
+            "radial-gradient(circle at 74% 58%, rgba(255, 0, 210, 0.88) 0 22px, rgba(170, 22, 245, 0.68) 23px 34px, transparent 35px)," +
+            "radial-gradient(circle at 86% 46%, rgba(190, 44, 255, 0.82) 0 14px, rgba(255, 0, 190, 0.62) 15px 23px, transparent 24px)," +
+            "radial-gradient(circle at 94% 56%, rgba(255, 0, 212, 0.88) 0 20px, rgba(173, 24, 246, 0.66) 21px 32px, transparent 33px)," +
+            "radial-gradient(circle at 6% 92%, rgba(210, 60, 255, 0.84) 0 28px, rgba(255, 0, 206, 0.66) 29px 42px, transparent 43px)," +
+            "radial-gradient(circle at 18% 82%, rgba(255, 0, 210, 0.88) 0 19px, rgba(171, 26, 244, 0.66) 20px 31px, transparent 32px)," +
+            "radial-gradient(circle at 30% 94%, rgba(198, 52, 255, 0.84) 0 24px, rgba(255, 0, 194, 0.64) 25px 37px, transparent 38px)," +
+            "radial-gradient(circle at 42% 84%, rgba(255, 0, 210, 0.86) 0 16px, rgba(173, 24, 246, 0.62) 17px 26px, transparent 27px)," +
+            "radial-gradient(circle at 54% 96%, rgba(206, 54, 255, 0.82) 0 27px, rgba(255, 0, 196, 0.62) 28px 41px, transparent 42px)," +
+            "radial-gradient(circle at 66% 84%, rgba(255, 0, 210, 0.86) 0 18px, rgba(170, 22, 244, 0.62) 19px 29px, transparent 30px)," +
+            "radial-gradient(circle at 78% 94%, rgba(198, 52, 255, 0.82) 0 25px, rgba(255, 0, 196, 0.6) 26px 38px, transparent 39px)," +
+            "radial-gradient(circle at 88% 82%, rgba(255, 0, 210, 0.86) 0 17px, rgba(173, 24, 246, 0.62) 18px 27px, transparent 28px)," +
+            "radial-gradient(circle at 98% 96%, rgba(206, 54, 255, 0.8) 0 23px, rgba(255, 0, 196, 0.58) 24px 35px, transparent 36px)," +
+            "radial-gradient(circle at 50% -18%, rgba(255, 0, 210, 0.72) 0 54px, rgba(168, 22, 245, 0.54) 55px 70px, transparent 71px)," +
+            "radial-gradient(circle at -8% 44%, rgba(255, 0, 196, 0.68) 0 46px, rgba(175, 30, 245, 0.5) 47px 61px, transparent 62px)," +
+            "radial-gradient(circle at 108% 62%, rgba(255, 0, 212, 0.68) 0 48px, rgba(170, 22, 244, 0.5) 49px 64px, transparent 65px)," +
+            "radial-gradient(circle at 16% -14%, rgba(198, 52, 255, 0.62) 0 40px, rgba(255, 0, 196, 0.44) 41px 54px, transparent 55px)," +
+            "radial-gradient(circle at 84% 116%, rgba(204, 56, 255, 0.6) 0 44px, rgba(255, 0, 202, 0.44) 45px 58px, transparent 59px)",
+          filter: "saturate(1.15)",
+        }}
+      />
 
-      {/* Main */}
-      <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50" style={{ flex: "85 1 0%" }}>
+      <div className="relative z-10 flex h-full w-full flex-col">
+        <div className="min-h-0" style={{ flex: "15 1 0%" }}>
+          <AppBanner />
+        </div>
+
+        {/* Main */}
+        <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4" style={{ flex: "85 1 0%" }}>
         <div className="min-h-0 flex gap-4" style={{ flex: "11 1 0%" }}>
           {/* Left column (1/3) */}
           <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 pb-5 overflow-hidden flex flex-col">
@@ -1607,6 +1631,7 @@ export default function SoundWavesPresentationMockup() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
