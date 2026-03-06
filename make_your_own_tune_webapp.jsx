@@ -145,6 +145,8 @@ const WAVE_TILES: Array<{ type: WaveType; name: string; subtitle: string }> = [
   { type: "humps", name: "Humps", subtitle: "envelope" },
 ];
 
+const PANEL_CLASS = "min-w-0 rounded-3xl border bg-white overflow-hidden flex flex-col";
+
 function formatHz(x: number) {
   if (x >= 1000) return `${(x / 1000).toFixed(2)} kHz`;
   return `${Math.round(x)} Hz`;
@@ -552,9 +554,9 @@ export default function SoundWavesPresentationMockup() {
       </div>
 
       {/* Main */}
-      <div className="h-[calc(100vh-4rem)] w-full flex">
+      <div className="h-[calc(100vh-4rem)] w-full flex gap-5 p-5">
         {/* Left column (1/3) */}
-        <div className="w-1/3 min-w-[360px] border-r bg-white p-5">
+        <div id="panel1" className={`w-1/3 min-w-[360px] p-4 pb-5 ${PANEL_CLASS}`}>
           <div className="flex items-baseline justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500">1) Pick a wave</div>
@@ -624,8 +626,8 @@ export default function SoundWavesPresentationMockup() {
         {/* Right column (2/3) */}
         <div className="w-2/3 flex flex-col">
           {/* MODIFY (2/3 height) */}
-          <div className="flex-[2] p-5">
-            <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="flex-[2] min-h-0">
+            <div id="panel2" className={`h-full shadow-sm ${PANEL_CLASS}`}>
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
                   <div className="text-xs uppercase tracking-wider text-slate-500">2) Modify</div>
@@ -785,8 +787,8 @@ export default function SoundWavesPresentationMockup() {
           </div>
 
           {/* PRODUCE (1/3 height) */}
-          <div className="flex-[1] p-5 pt-0">
-            <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="flex-[1] min-h-0 pt-5">
+            <div id="panel3" className={`h-full shadow-sm ${PANEL_CLASS}`}>
               <div className="px-6 py-4 border-b flex items-center justify-between">
                 <div>
                   <div className="text-xs uppercase tracking-wider text-slate-500">3) Produce</div>
