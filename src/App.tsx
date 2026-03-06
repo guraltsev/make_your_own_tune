@@ -1171,31 +1171,32 @@ export default function SoundWavesPresentationMockup() {
 
           {/* Right column (2/3) */}
           <div className="w-2/3 min-h-0">
-            <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
-              <BannerHeader
-                left={
-                  <div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-bold text-slate-900">2) Wave Inspector</span>
-                      <span className="text-xs uppercase tracking-wider text-slate-500">Modify</span>
-                    </div>
-                  </div>
-                }
-                right={
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
-                    <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
-                    <div className="text-xs text-slate-600">Modified</div>
-                    <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
-                    <div className="text-xs text-slate-500">Base</div>
-                  </div>
-                }
-              />
+            <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden">
+              <div className="h-full flex min-h-0">
+                {/* Plot + banner */}
+                <div className="flex-1 min-w-0 border-r flex flex-col">
+                  <BannerHeader
+                    left={
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-slate-900">2) Wave Inspector</span>
+                          <span className="text-xs uppercase tracking-wider text-slate-500">Modify</span>
+                        </div>
+                      </div>
+                    }
+                    right={
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
+                        <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
+                        <div className="text-xs text-slate-600">Modified</div>
+                        <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
+                        <div className="text-xs text-slate-500">Base</div>
+                      </div>
+                    }
+                  />
 
-              <div className="flex-1 flex min-h-0">
-                {/* Plot */}
-                <div className="flex-1 p-6 min-w-0">
-                  <div className="h-full rounded-2xl border bg-slate-50 p-4 flex flex-col">
+                  <div className="flex-1 p-6 min-w-0">
+                    <div className="h-full rounded-2xl border bg-slate-50 p-4 flex flex-col">
                     <div className="text-sm font-medium flex items-center justify-between">
                       <span>
                         {WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · {formatHz(freqHz)} · amp {amp.toFixed(2)}
@@ -1260,9 +1261,10 @@ export default function SoundWavesPresentationMockup() {
                     </div>
                   </div>
                 </div>
+              </div>
 
                 {/* Sliders */}
-          <div className="w-[320px] border-l p-4 bg-white overflow-hidden">
+                <div className="w-[320px] p-4 bg-white overflow-hidden">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold">Controls</div>
                     <button
