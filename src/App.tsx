@@ -223,28 +223,9 @@ function BannerHeader({
   right?: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden border-b">
-      {/* Layer order is DOM order: gradient -> bubbles -> text; do not introduce z-index here. */}
-      <div className="relative px-6 py-4">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "linear-gradient(to right, rgb(248 250 252), rgb(239 246 255), rgb(241 245 249))" }}
-        />
-
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-8 left-10 h-16 w-16 rounded-full" style={{ background: "rgba(59,130,246,0.16)" }} />
-          <div className="absolute top-2 left-44 h-8 w-8 rounded-full" style={{ background: "rgba(14,165,233,0.2)" }} />
-          <div className="absolute bottom-0 left-1/3 h-10 w-10 rounded-full" style={{ background: "rgba(16,185,129,0.14)" }} />
-          <div className="absolute -top-10 right-24 h-16 w-16 rounded-full" style={{ background: "rgba(99,102,241,0.12)" }} />
-          <div className="absolute bottom-1 right-8 h-7 w-7 rounded-full" style={{ background: "rgba(59,130,246,0.2)" }} />
-        </div>
-
-        <div className="relative flex items-center justify-between">
-          {left}
-          {right}
-        </div>
-      </div>
+    <div className="px-6 py-4 border-b border-red-900/20 bg-red-950/5 flex items-center justify-between">
+      {left}
+      {right}
     </div>
   );
 }
@@ -1071,8 +1052,8 @@ export default function SoundWavesPresentationMockup() {
       <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50" style={{ flex: "85 1 0%" }}>
         <div className="min-h-0 flex gap-4" style={{ flex: "11 1 0%" }}>
           {/* Left column (1/3) */}
-          <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 pb-5 overflow-hidden flex flex-col">
-          <div className="flex items-baseline justify-between">
+          <div className="w-1/3 min-w-0 rounded-3xl border-2 border-slate-400/80 bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="px-6 py-4 border-b border-red-900/20 bg-red-950/5 flex items-baseline justify-between">
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-bold text-slate-900">▶ 1) Wave Library</span>
@@ -1082,7 +1063,7 @@ export default function SoundWavesPresentationMockup() {
             <div className="text-xs text-slate-500">6 tiles</div>
           </div>
 
-          <div className="mt-4 grid flex-1 min-h-0 grid-cols-2 auto-rows-fr gap-3 pb-1">
+          <div className="mt-4 px-4 pb-5 grid flex-1 min-h-0 grid-cols-2 auto-rows-fr gap-3">
             {WAVE_TILES.map((w) => {
               const selected = w.type === waveType;
               const selectTile = () => setWaveType(w.type);
@@ -1171,31 +1152,32 @@ export default function SoundWavesPresentationMockup() {
 
           {/* Right column (2/3) */}
           <div className="w-2/3 min-h-0">
-            <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
-              <BannerHeader
-                left={
-                  <div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-bold text-slate-900">2) Wave Inspector</span>
-                      <span className="text-xs uppercase tracking-wider text-slate-500">Modify</span>
-                    </div>
-                  </div>
-                }
-                right={
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
-                    <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
-                    <div className="text-xs text-slate-600">Modified</div>
-                    <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
-                    <div className="text-xs text-slate-500">Base</div>
-                  </div>
-                }
-              />
+            <div className="h-full rounded-3xl border-2 border-slate-400/80 bg-white shadow-sm overflow-hidden">
+              <div className="h-full flex min-h-0">
+                {/* Plot + banner */}
+                <div className="flex-1 min-w-0 border-r-2 border-slate-300 flex flex-col">
+                  <BannerHeader
+                    left={
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-slate-900">2) Wave Inspector</span>
+                          <span className="text-xs uppercase tracking-wider text-slate-500">Modify</span>
+                        </div>
+                      </div>
+                    }
+                    right={
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-slate-500">Base: 220 Hz, amp 1</div>
+                        <div className="h-2 w-2 rounded-full bg-slate-900" title="Modified" />
+                        <div className="text-xs text-slate-600">Modified</div>
+                        <div className="h-2 w-2 rounded-full bg-slate-300" title="Base" />
+                        <div className="text-xs text-slate-500">Base</div>
+                      </div>
+                    }
+                  />
 
-              <div className="flex-1 flex min-h-0">
-                {/* Plot */}
-                <div className="flex-1 p-6 min-w-0">
-                  <div className="h-full rounded-2xl border bg-slate-50 p-4 flex flex-col">
+                  <div className="flex-1 p-6 min-w-0">
+                    <div className="h-full rounded-2xl border bg-slate-50 p-4 flex flex-col">
                     <div className="text-sm font-medium flex items-center justify-between">
                       <span>
                         {WAVE_TILES.find((w) => w.type === waveType)?.name ?? waveType} · {formatHz(freqHz)} · amp {amp.toFixed(2)}
@@ -1260,9 +1242,10 @@ export default function SoundWavesPresentationMockup() {
                     </div>
                   </div>
                 </div>
+              </div>
 
                 {/* Sliders */}
-          <div className="w-[320px] border-l p-4 bg-white overflow-hidden">
+                <div className="w-[320px] p-4 bg-white overflow-hidden">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold">Controls</div>
                     <button
@@ -1351,8 +1334,8 @@ export default function SoundWavesPresentationMockup() {
 
         {/* PRODUCE (full-width bottom panel) */}
         <div className="min-h-0" style={{ flex: "6 1 0%" }}>
-          <div className="h-full rounded-3xl border bg-white shadow-sm overflow-hidden flex flex-col">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
+          <div className="h-full rounded-3xl border-2 border-slate-400/80 bg-white shadow-sm overflow-hidden flex flex-col">
+              <div className="px-6 py-4 border-b border-red-900/20 bg-red-950/5 flex items-center justify-between">
                 <div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xl font-bold text-slate-900">3) {formatSeconds(timelineDurationSec)} Timeline</span>
