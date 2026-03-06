@@ -253,35 +253,6 @@ function AppBanner() {
   return (
     <div className="h-full overflow-hidden border-b">
       <div className="relative h-full px-6 py-4 flex items-center justify-center">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "linear-gradient(135deg, rgb(30 58 138), rgb(34 255 136))",
-          }}
-        />
-
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            opacity: 0.9,
-            backgroundImage:
-              "radial-gradient(circle at 6% 22%, rgba(180, 35, 255, 0.62) 0 10px, rgba(255, 0, 210, 0.97) 11px 13px, transparent 14px)," +
-              "radial-gradient(circle at 24% 50%, rgba(195, 55, 255, 0.58) 0 8px, rgba(255, 0, 210, 0.95) 9px 10px, transparent 11px)," +
-              "radial-gradient(circle at 52% 36%, rgba(178, 45, 255, 0.56) 0 7px, rgba(255, 0, 210, 0.95) 8px 9px, transparent 10px)," +
-              "radial-gradient(circle at 70% 42%, rgba(165, 18, 245, 0.6) 0 9px, rgba(255, 0, 210, 0.96) 10px 11px, transparent 13px)," +
-              "radial-gradient(circle at 94% 24%, rgba(210, 88, 255, 0.56) 0 5px, rgba(255, 0, 210, 0.93) 6px 8px, transparent 9px)," +
-              "radial-gradient(circle at 16% 76%, rgba(180, 35, 255, 0.54) 0 12px, rgba(255, 0, 210, 0.95) 13px 14px, transparent 16px)," +
-              "radial-gradient(circle at 36% 70%, rgba(195, 55, 255, 0.52) 0 8px, rgba(255, 0, 210, 0.92) 9px 10px, transparent 11px)," +
-              "radial-gradient(circle at 60% 82%, rgba(165, 18, 245, 0.52) 0 7px, rgba(255, 0, 210, 0.92) 8px 9px, transparent 10px)," +
-              "radial-gradient(circle at 80% 66%, rgba(178, 45, 255, 0.52) 0 9px, rgba(255, 0, 210, 0.93) 10px 11px, transparent 13px)," +
-              "radial-gradient(circle at 92% 84%, rgba(195, 55, 255, 0.48) 0 8px, rgba(255, 0, 210, 0.9) 9px 10px, transparent 11px)," +
-              "radial-gradient(circle at 10% -20%, rgba(165, 18, 245, 0.42) 0 32px, rgba(255, 0, 210, 0.9) 33px 36px, transparent 37px)," +
-              "radial-gradient(circle at 88% 118%, rgba(180, 35, 255, 0.4) 0 30px, rgba(255, 0, 210, 0.88) 31px 34px, transparent 35px)",
-          }}
-        />
-
         <h1
           className="relative text-center"
           style={{
@@ -1062,13 +1033,44 @@ export default function SoundWavesPresentationMockup() {
   }
 
   return (
-    <div className="h-screen w-screen bg-slate-50 text-slate-900 flex flex-col overflow-hidden">
-      <div className="min-h-0" style={{ flex: "15 1 0%" }}>
-        <AppBanner />
-      </div>
+    <div className="relative h-screen w-screen bg-slate-50 text-slate-900 overflow-hidden">
+      <div
+        id="app-root-gradient-background"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "linear-gradient(135deg, rgb(30 58 138), rgb(34 255 136))",
+        }}
+      />
+      <div
+        id="app-root-bubbles-background"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          opacity: 0.9,
+          backgroundImage:
+            "radial-gradient(circle at 6% 22%, rgba(180, 35, 255, 0.62) 0 10px, rgba(255, 0, 210, 0.97) 11px 13px, transparent 14px)," +
+            "radial-gradient(circle at 24% 50%, rgba(195, 55, 255, 0.58) 0 8px, rgba(255, 0, 210, 0.95) 9px 10px, transparent 11px)," +
+            "radial-gradient(circle at 52% 36%, rgba(178, 45, 255, 0.56) 0 7px, rgba(255, 0, 210, 0.95) 8px 9px, transparent 10px)," +
+            "radial-gradient(circle at 70% 42%, rgba(165, 18, 245, 0.6) 0 9px, rgba(255, 0, 210, 0.96) 10px 11px, transparent 13px)," +
+            "radial-gradient(circle at 94% 24%, rgba(210, 88, 255, 0.56) 0 5px, rgba(255, 0, 210, 0.93) 6px 8px, transparent 9px)," +
+            "radial-gradient(circle at 16% 76%, rgba(180, 35, 255, 0.54) 0 12px, rgba(255, 0, 210, 0.95) 13px 14px, transparent 16px)," +
+            "radial-gradient(circle at 36% 70%, rgba(195, 55, 255, 0.52) 0 8px, rgba(255, 0, 210, 0.92) 9px 10px, transparent 11px)," +
+            "radial-gradient(circle at 60% 82%, rgba(165, 18, 245, 0.52) 0 7px, rgba(255, 0, 210, 0.92) 8px 9px, transparent 10px)," +
+            "radial-gradient(circle at 80% 66%, rgba(178, 45, 255, 0.52) 0 9px, rgba(255, 0, 210, 0.93) 10px 11px, transparent 13px)," +
+            "radial-gradient(circle at 92% 84%, rgba(195, 55, 255, 0.48) 0 8px, rgba(255, 0, 210, 0.9) 9px 10px, transparent 11px)," +
+            "radial-gradient(circle at 10% -20%, rgba(165, 18, 245, 0.42) 0 32px, rgba(255, 0, 210, 0.9) 33px 36px, transparent 37px)," +
+            "radial-gradient(circle at 88% 118%, rgba(180, 35, 255, 0.4) 0 30px, rgba(255, 0, 210, 0.88) 31px 34px, transparent 35px)",
+        }}
+      />
 
-      {/* Main */}
-      <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4 bg-gradient-to-br from-[#1e3a8a]/55 via-[#34d399]/45 to-[#c2410c]/50" style={{ flex: "85 1 0%" }}>
+      <div className="relative z-10 flex h-full w-full flex-col">
+        <div className="min-h-0" style={{ flex: "15 1 0%" }}>
+          <AppBanner />
+        </div>
+
+        {/* Main */}
+        <div className="h-full w-full flex min-h-0 flex-col gap-4 p-4" style={{ flex: "85 1 0%" }}>
         <div className="min-h-0 flex gap-4" style={{ flex: "11 1 0%" }}>
           {/* Left column (1/3) */}
           <div className="w-1/3 min-w-0 rounded-3xl border bg-white p-4 pb-5 overflow-hidden flex flex-col">
@@ -1607,6 +1609,7 @@ export default function SoundWavesPresentationMockup() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
